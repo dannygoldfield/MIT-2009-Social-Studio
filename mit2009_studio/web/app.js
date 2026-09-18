@@ -1,10 +1,14 @@
 "use strict";
 const $ = id => document.getElementById(id);
-let tool = "video", filter = "all", media = [], sequence = [], selected = -1, ready = false;
+let tool = "audio", filter = "all", media = [], sequence = [], selected = -1, ready = false, search = "", brandColors = [];
+let audioView="audition", audioBucketFilter="effect", auditionSearch="";
+const BUCKETS={bed:"Sound beds",effect:"Sound Effects",wildcard:"Wildcards"};
+const audioBucket=m=>m.audio_bucket||({Bed:"bed",Gesture:"effect",Music:"wildcard"}[m.ingredient_role])||"wildcard";
+const DRAFT_KEY = "mit2009Studio2026Draft";
 const copy = {
   video: ["PHOTO & VIDEO GENERATOR", "Make the work move.", "Arrange photographs and edited clips into a silent video. Add sound when you’re ready.", "Create silent video"],
-  audio: ["AUDIO GENERATOR", "Find the right feeling.", "Build a new soundtrack from your sound ingredients. Listen, compare, and keep what works.", "Generate soundtrack"],
-  text: ["TEXT ANIMATOR", "Give your ideas a voice.", "Animate a title, add words over an image, or create a transparent layer for your final edit.", "Export animation"],
+  audio: ["AUDIO GENERATOR", "Find your sound.", "Sound beds, Sound Effects, and Wildcards. Listen first. Keep what feels like 2.009.", "Generate soundtrack"],
+  text: ["TEXT ANIMATOR", "Make your words move.", "Animate a title, add words over an image, or create a transparent layer for your final edit.", "Export animation"],
   assemble: ["AV ASSEMBLER", "Bring it all together.", "Combine your chosen video, soundtrack, and optional animated text into a downloadable MP4.", "Export final post"]
 };
 const item = id => media.find(m => m.id === id);
@@ -18,35 +22,38 @@ async function api(path, body) {
 }
 function saveDraft(){
   if(!ready)return;
-  try{const inputs={};document.querySelectorAll(".settings input[id],.settings select[id],.settings textarea[id]").forEach(e=>{if(e.type!=="file")inputs[e.id]=e.type==="checkbox"?e.checked:e.value;});localStorage.setItem("mit2009StudioDraft",JSON.stringify({tool,sequence,selected,inputs}));}catch{}
+  try{const inputs={};document.querySelectorAll(".settings input[id],.settings select[id],.settings textarea[id]").forEach(e=>{if(e.type!=="file")inputs[e.id]=e.type==="checkbox"?e.checked:e.value;});localStorage.setItem(DRAFT_KEY,JSON.stringify({tool,sequence,selected,inputs,audioView,audioBucketFilter}));}catch{}
 }
 function restoreDraft(){
-  try{const draft=JSON.parse(localStorage.getItem("mit2009StudioDraft")||"null");if(!draft)return;
+  try{const draft=JSON.parse(localStorage.getItem(DRAFT_KEY)||localStorage.getItem("mit2009StudioDraft")||"null");if(!draft)return;
     sequence=(draft.sequence||[]).filter(e=>item(e.id));selected=Math.min(draft.selected??0,sequence.length-1);
     Object.entries(draft.inputs||{}).forEach(([id,value])=>{const e=$(id);if(!e||e.type==="file")return;if(e.type==="checkbox")e.checked=Boolean(value);else e.value=value;});
     if(copy[draft.tool])tool=draft.tool;
+    if(["audition","mix"].includes(draft.audioView))audioView=draft.audioView;
+    if(BUCKETS[draft.audioBucketFilter])audioBucketFilter=draft.audioBucketFilter;
+    auditionSearch=val("audition-search").trim().toLowerCase();
   }catch{}
 }
 function selectTool(next) {
-  tool=next;document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===tool));
+  tool=next;document.body.dataset.tool=tool;$("file-input").accept=tool==="audio"?"audio/*":"image/*,video/*,audio/*";document.querySelectorAll("button[data-tool]").forEach(b=>{b.classList.toggle("active",b.dataset.tool===tool);b.setAttribute("aria-pressed",String(b.dataset.tool===tool));});
   document.querySelectorAll(".tool-panel").forEach(p=>p.hidden=p.id!==`panel-${tool}`);
   const [eyebrow,title,description,button]=copy[tool];$("eyebrow").textContent=eyebrow;$("page-title").textContent=title;$("page-description").textContent=description;
   $("render-button").replaceChildren(document.createTextNode(button),element("span","","↗"));$("form-status").textContent="";
-  renderLibrary();updatePreview();saveDraft();
+  renderLibrary();setAudioView(audioView);updatePreview();saveDraft();
 }
 function updateSelects() {
   document.querySelectorAll("select[data-library]").forEach(select=>{
     const previous=select.value, kind=select.dataset.library, first=select.options[0].textContent;
     select.replaceChildren(new Option(first,""));
-    media.filter(m=>{const role=m.ingredient_role;if(!role)return true;if(select.id==="audio-music")return role==="Music";if(select.id==="audio-accent")return role==="Gesture";if(select.id==="audio-main")return role!=="Gesture";return true;}).filter(m=>kind==="audio"?m.kind==="audio":kind==="overlay"?m.role==="text-overlay":kind==="visual"?["image","video"].includes(m.kind)&&m.role!=="text-overlay":m.kind==="video"&&m.role!=="text-overlay").forEach(m=>select.add(new Option(m.name,m.id)));
-    if(item(previous))select.value=previous;
+    media.filter(m=>{const bucket={"audio-main":"bed","audio-accent":"effect","audio-music":"wildcard"}[select.id];return !bucket||(m.role==="source"&&audioBucket(m)===bucket&&m.assessment!=="pass");}).filter(m=>kind==="audio"?m.kind==="audio":kind==="overlay"?m.role==="text-overlay":kind==="visual"?["image","video"].includes(m.kind)&&m.role!=="text-overlay":m.kind==="video"&&m.role!=="text-overlay").forEach(m=>select.add(new Option(m.name,m.id)));
+    if([...select.options].some(o=>o.value===previous))select.value=previous;
   });
 }
-async function refreshLibrary(){media=(await api("/api/library")).items;$("media-count").textContent=`${media.length} files`;updateSelects();renderLibrary();}
+async function refreshLibrary(){media=(await api("/api/library")).items;$("media-count").textContent=`${media.length} files`;updateSelects();renderLibrary();renderAudition();}
 function renderLibrary(){
   const list=$("media-list");list.replaceChildren();
-  const rows=media.filter(m=>filter==="all"||m.kind===filter);
-  if(!rows.length){list.append(element("p","muted small","No media here yet."));return;}
+  const rows=media.filter(m=>(filter==="all"||m.kind===filter)&&m.name.toLowerCase().includes(search));
+  if(!rows.length){list.append(element("p","muted small",search?"No matching files. Try another name.":"No media here yet."));return;}
   rows.slice().reverse().forEach(m=>{
     const card=element("div","media-card");
     if(m.thumbnail_url){const img=element("img");img.src=m.thumbnail_url;img.alt="";img.loading="lazy";card.append(img);}else card.append(element("div","media-icon",m.kind==="audio"?"♫":"▻"));
@@ -59,7 +66,7 @@ function useMedia(m){
   if(tool==="video"&&["image","video"].includes(m.kind)&&m.role!=="text-overlay"){
     sequence.push({id:m.id,duration:m.kind==="video"?Math.min(m.duration,num("default-duration")):num("default-duration"),start:0,focus_x:.5,focus_y:.5});selected=sequence.length-1;renderSequence();
   }else if(tool==="text"&&["image","video"].includes(m.kind)){$("text-base").value=m.id;$("text-transparent").checked=false;}
-  else if(tool==="audio"&&m.kind==="audio")$("audio-main").value=m.id;
+  else if(tool==="audio"&&m.kind==="audio"){audioBucketFilter=audioBucket(m);$("audition-shortlist").checked=false;auditionSearch=m.name.toLowerCase();$("audition-search").value=m.name;setAudioView("audition");}
   else if(tool==="assemble"){
     if(m.role==="text-overlay")$("assemble-overlay").value=m.id;
     else $(m.kind==="audio"?"assemble-audio":"assemble-video").value=m.id;
@@ -95,9 +102,11 @@ function renderSequence(){
 }
 function updatePreview(){
   $("video-motion").disabled=val("video-fit")==="contain";
+  updateSwatches();
+  updateMixPlayers();
   const stage=$("preview-stage");stage.replaceChildren();let m,format="vertical";
   $("preview-heading").textContent=tool==="audio"?"Sound ingredient":tool==="text"?"Style preview":tool==="assemble"?"Selected video":"Framing preview";
-  $("preview-note").textContent=tool==="text"?"A guide to the style and placement. Your exported animation appears below for review.":tool==="audio"?"Listen to the main ingredient here. Your new mix will appear below.":"Review your rendered video below before sharing.";
+  $("preview-note").textContent=tool==="text"?"A guide to the style and placement. Your exported animation appears below for review.":tool==="audio"?"Listen to your sound bed here. Each layer also has its own player. Your finished mix appears below.":"Review your rendered video below before sharing.";
   if(tool==="video"){m=item(sequence[selected]?.id);format=val("video-format");}
   if(tool==="text"){m=checked("text-transparent")?null:item(val("text-base"));format=val("text-format");}
   if(tool==="audio")m=item(val("audio-main"));
@@ -110,7 +119,7 @@ function updatePreview(){
     if(tool==="video"){e.style.objectFit=val("video-fit")==="contain"?"contain":"cover";e.style.objectPosition=`${(sequence[selected]?.focus_x??.5)*100}% ${(sequence[selected]?.focus_y??.5)*100}%`;}
     stage.append(e);
   }else if(tool!=="text"){
-    const empty=element("div","empty-preview");empty.append(element("span","","2.009"),element("p","",tool==="audio"?"Choose a sound ingredient.":tool==="assemble"?"Choose your video and soundtrack.":"Choose a photograph to start your edit."));stage.append(empty);
+    const empty=element("div","empty-preview");const mark=element("span","connect-logo"),logo=element("img");logo.src="/brand-2026/logo-02.png";logo.alt="2.009 Connect";mark.append(logo);empty.append(mark,element("p","",tool==="audio"?"Choose a sound ingredient.":tool==="assemble"?"Choose your video and soundtrack.":"Choose a photograph to start your edit."));stage.append(empty);
   }
   if(tool==="text"){
     const overlay=element("div",`preview-text ${val("text-position")} ${val("text-style")}`);overlay.style.color=val("text-color");
@@ -122,15 +131,18 @@ setInterval(()=>{if(tool!=="text")return;const span=$("preview-words");if(!span)
   if(val("text-style")==="words")span.textContent=content.split(/\s+/).slice(0,Math.ceil(content.split(/\s+/).length*Math.min(1,elapsed/2))).join(" ");
   else if(val("text-style")==="type")span.textContent=content.slice(0,Math.ceil(content.length*Math.min(1,elapsed/2)));
 },80);
+function importFeedback(message){$("import-status").textContent=message;$("audition-status").textContent=message;}
 async function importFiles(files){
-  const supported=[...files].filter(f=>/\.(jpe?g|png|webp|tiff?|mp4|mov|m4v|webm|wav|mp3|m4a|aac|aiff?|flac|ogg)$/i.test(f.name));
-  if(!supported.length){$("import-status").textContent="Choose photographs, video, or audio files. Unzip photo folders before importing.";return;}
+  const importTool=tool, importBucket=audioBucketFilter;
+  const supported=[...files].filter(f=>(importTool==="audio"?/\.(wav|mp3|m4a|aac|aiff?|flac|ogg)$/i:/\.(jpe?g|png|webp|tiff?|mp4|mov|m4v|webm|wav|mp3|m4a|aac|aiff?|flac|ogg)$/i).test(f.name));
+  if(!supported.length){importFeedback("Choose photographs, video, or audio files. Unzip folders before importing.");return;}
   let failed=0;const imported=[];
   for(let i=0;i<supported.length;i++){
-    const file=supported[i];$("import-status").textContent=`Importing ${i+1} of ${supported.length}: ${file.name}`;
-    try{const r=await fetch(`/api/import?name=${encodeURIComponent(file.name)}`,{method:"POST",headers:{"X-Studio-Request":"1"},body:file});const data=await r.json();if(!r.ok)throw Error(data.error);imported.push(data);}catch(e){failed++;$("form-status").textContent=`${file.name}: ${e.message}`;}
+    const file=supported[i];importFeedback(`Importing ${i+1} of ${supported.length}: ${file.name}`);
+    try{const r=await fetch(`/api/import?name=${encodeURIComponent(file.name)}&audio_bucket=${importTool==="audio"?importBucket:"wildcard"}`,{method:"POST",headers:{"X-Studio-Request":"1"},body:file});const data=await r.json();if(!r.ok)throw Error(data.error);imported.push(data);}catch(e){failed++;$("form-status").textContent=`${file.name}: ${e.message}`;}
   }
-  await refreshLibrary();$("import-status").textContent=`${imported.length} imported${failed?`; ${failed} could not be imported`:""}.`;
+  await refreshLibrary();importFeedback(`${imported.length} imported${failed?`; ${failed} could not be imported`:""}.`);
+  if(tool==="audio"){$("audition-shortlist").checked=false;renderAudition();}
   if(tool==="video"){
     imported.filter(m=>["image","video"].includes(m.kind)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).forEach(m=>useMedia(m));
   }
@@ -174,8 +186,11 @@ async function pollJobs(){
 }
 document.addEventListener("input",()=>setTimeout(saveDraft,0));
 document.addEventListener("change",()=>setTimeout(saveDraft,0));
-document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>selectTool(b.dataset.tool));
+document.querySelectorAll("button[data-tool]").forEach(b=>b.onclick=()=>selectTool(b.dataset.tool));
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));renderLibrary();});
+$("media-search").oninput=e=>{search=e.target.value.trim().toLowerCase();renderLibrary();};
+$("drop-zone").onclick=()=>$("file-input").click();
+$("import-folder").onclick=()=>$("folder-input").click();
 $("file-input").onchange=e=>importFiles(e.target.files);$("folder-input").onchange=e=>importFiles(e.target.files);
 const drop=$("drop-zone");drop.ondragover=e=>{e.preventDefault();drop.classList.add("dragging");};drop.ondragleave=()=>drop.classList.remove("dragging");drop.ondrop=e=>{e.preventDefault();drop.classList.remove("dragging");importFiles(e.dataTransfer.files);};
 $("apply-duration").onclick=()=>{sequence.forEach(e=>{const m=item(e.id);e.duration=m.kind==="video"?Math.min(num("default-duration"),m.duration-e.start):num("default-duration");});renderSequence();};
@@ -184,5 +199,76 @@ $("text-duration").addEventListener("change",()=>{$("text-hold").value=Math.max(
 $("text-base").addEventListener("change",()=>{const m=item(val("text-base"));if(m?.kind==="video"){$("text-duration").value=Math.min(180,m.duration).toFixed(1);$("text-hold").value=Math.max(.2,num("text-duration")-num("text-start"));}});
 $("render-button").onclick=renderJob;
 $("text-content").value=$("text-content").value.replace(/\\n/g,"\n");
-(async()=>{try{await refreshLibrary();restoreDraft();ready=true;selectTool(tool);renderSequence();await pollJobs();}catch(e){$("form-status").textContent=e.message;}})();
+(async()=>{try{await loadBrand();await refreshLibrary();restoreDraft();ready=true;selectTool(tool);renderSequence();await pollJobs();}catch(e){$("form-status").textContent=e.message;}})();
 setInterval(pollJobs,1500);
+
+// This edition stays 2026. A future course year belongs in its own copy.
+async function loadBrand(){
+  const brand=await api("/brand-2026/brand.json");
+  brandColors=[...brand.colors,{name:"Ink",hex:"#231f20"},{name:"White",hex:"#ffffff"}];
+  for(const [container,target] of [["text-swatches","text-color"],["background-swatches","text-background"]]){
+    brandColors.forEach(color=>{
+      const button=element("button","swatch");button.type="button";button.style.setProperty("--swatch",color.hex);button.dataset.color=color.hex;button.dataset.target=target;
+      button.title=`${color.name} · ${color.hex.toUpperCase()}`;button.setAttribute("aria-label",`${target==="text-color"?"Text":"Background"}: ${color.name}`);
+      button.onclick=()=>{$(target).value=color.hex;updatePreview();saveDraft();};$(container).append(button);
+    });
+  }
+  brand.colors.forEach(color=>{
+    const b=element("button","palette-card");b.type="button";b.style.setProperty("--swatch",color.hex);b.setAttribute("aria-label",`Copy ${color.name} ${color.hex}`);
+    b.append(element("span","palette-chip"),element("strong","",color.name),element("small","",color.hex.toUpperCase()));
+    b.onclick=async()=>{try{await navigator.clipboard.writeText(color.hex.toUpperCase());$("brand-status").textContent=`${color.name} copied: ${color.hex.toUpperCase()}`;}catch{$("brand-status").textContent=`${color.name}: ${color.hex.toUpperCase()}`;}};$("brand-palette").append(b);
+  });
+}
+function updateSwatches(){
+  document.querySelectorAll(".swatch").forEach(b=>{const chosen=val(b.dataset.target).toLowerCase()===b.dataset.color;b.classList.toggle("selected",chosen);b.setAttribute("aria-pressed",String(chosen));});
+}
+$("open-brand").onclick=()=>$("brand-dialog").showModal();
+$("close-brand").onclick=()=>$("brand-dialog").close();
+$("brand-dialog").addEventListener("click",e=>{if(e.target===$("brand-dialog")){const rect=e.target.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)e.target.close();}});
+
+function setAudioView(view){
+  audioView=view;document.body.dataset.audioView=view;
+  $("audio-audition").hidden=view!=="audition";$("audio-mix").hidden=view!=="mix";
+  document.querySelectorAll("button[data-audio-view]").forEach(b=>{b.classList.toggle("active",b.dataset.audioView===view);b.setAttribute("aria-pressed",String(b.dataset.audioView===view));});
+  if(tool==="audio"&&view==="audition")renderAudition();
+  saveDraft();
+}
+function updateMixPlayers(){
+  for(const part of ["main","accent","music"]){
+    const player=$("listen-"+part),m=item(val("audio-"+part));player.hidden=!m;
+    if(m&&player.getAttribute("src")!==m.url)player.src=m.url;
+    if(!m)player.removeAttribute("src");
+  }
+}
+async function assessAudio(m,changes,status){
+  try{await api("/api/audio-item",{id:m.id,...changes});Object.assign(m,changes);status.textContent="Saved";updateSelects();saveDraft();}
+  catch(e){status.textContent=e.message;}
+}
+function renderAudition(){
+  const sources=media.filter(m=>m.kind==="audio"&&m.role==="source");
+  document.querySelectorAll("[data-audio-bucket]").forEach(b=>{const bucket=b.dataset.audioBucket;b.classList.toggle("active",bucket===audioBucketFilter);b.setAttribute("aria-pressed",String(bucket===audioBucketFilter));$("bucket-count-"+bucket).textContent=sources.filter(m=>audioBucket(m)===bucket).length;});
+  const matches=sources.filter(m=>audioBucket(m)===audioBucketFilter&&(!checked("audition-shortlist")||m.collection==="Adobe playful shortlist")&&m.name.toLowerCase().includes(auditionSearch));
+  const list=$("audition-list");list.replaceChildren();
+  $("audition-intro").textContent=checked("audition-shortlist")?"A playful first pass from your Adobe library. Selected by the sound descriptions; your ears make the final call.":`${BUCKETS[audioBucketFilter]}. Listen, make a note, and decide what belongs.`;
+  if(!matches.length){list.append(element("p","empty-sequence",checked("audition-shortlist")?"No shortlist clips in this bucket. Turn off New Adobe shortlist to see your other sounds.":"No matching sounds. Import audio or try a different search."));return;}
+  matches.sort((a,b)=>(a.shortlist_order??999)-(b.shortlist_order??999)||a.name.localeCompare(b.name,undefined,{numeric:true})).forEach(m=>{
+    const card=element("article","audition-card"),head=element("div","audition-card-heading"),status=element("span","assessment-status");
+    head.append(element("span","tag",m.collection==="Adobe playful shortlist"?"ADOBE · SHORTLIST":"YOUR LIBRARY"),element("span","duration",`${m.duration.toFixed(2)} sec`));card.append(head,element("h3","",m.name.replace(/\.wav$/i,"")));
+    if(m.suggestion)card.append(element("p","sound-suggestion",m.suggestion));
+    const player=element("audio");player.controls=true;player.preload="none";player.src=m.url;player.setAttribute("aria-label",`Listen to ${m.name}`);card.append(player);
+    const controls=element("div","audition-card-controls"),label=element("label","","Your take"),review=element("select");review.setAttribute("aria-label",`Your take: ${m.name}`);
+    [["unreviewed","Not assessed"],["keep","Keep"],["maybe","Maybe"],["pass","Pass"]].forEach(([v,n])=>review.add(new Option(n,v)));review.value=m.assessment||"unreviewed";
+    review.onchange=()=>assessAudio(m,{assessment:review.value},status);label.append(review);controls.append(label);
+    const bucketLabel=element("label","","Bucket"),bucketSelect=element("select");bucketSelect.setAttribute("aria-label",`Bucket: ${m.name}`);Object.entries(BUCKETS).forEach(([v,n])=>bucketSelect.add(new Option(n,v)));bucketSelect.value=audioBucket(m);bucketSelect.onchange=async()=>{await assessAudio(m,{audio_bucket:bucketSelect.value},status);renderAudition();};bucketLabel.append(bucketSelect);controls.append(bucketLabel);card.append(controls);
+    const noteLabel=element("label","audition-note","Your note"),notes=element("input");notes.type="text";notes.maxLength=500;notes.value=m.notes||"";notes.placeholder="e.g. Good for a reveal";notes.setAttribute("aria-label",`Note: ${m.name}`);notes.onchange=()=>assessAudio(m,{notes:notes.value},status);noteLabel.append(notes);card.append(noteLabel);
+    const bottom=element("div","audition-card-bottom"),use=element("button","use-sound","Use in a mix ↗");use.onclick=()=>{if(m.assessment==="pass"){status.textContent="Change Pass to Keep or Maybe to use this sound.";return;}updateSelects();$({bed:"audio-main",effect:"audio-accent",wildcard:"audio-music"}[audioBucket(m)]).value=m.id;document.querySelectorAll("audio").forEach(p=>p.pause());setAudioView("mix");updatePreview();saveDraft();};bottom.append(status,use);card.append(bottom);list.append(card);
+  });
+}
+document.querySelectorAll("button[data-audio-view]").forEach(b=>b.onclick=()=>setAudioView(b.dataset.audioView));
+document.querySelectorAll("button[data-audio-bucket]").forEach(b=>b.onclick=()=>{audioBucketFilter=b.dataset.audioBucket;$("audition-shortlist").checked=false;renderAudition();saveDraft();});
+$("audition-shortlist").onchange=()=>{if(checked("audition-shortlist"))audioBucketFilter="effect";renderAudition();saveDraft();};
+$("audition-search").oninput=e=>{auditionSearch=e.target.value.trim().toLowerCase();renderAudition();};
+document.addEventListener("play",e=>{if(e.target.tagName==="AUDIO")document.querySelectorAll("audio").forEach(player=>{if(player!==e.target)player.pause();});},true);
+
+$("add-bucket-audio").onclick=()=>$("file-input").click();
+$("add-bucket-folder").onclick=()=>$("folder-input").click();

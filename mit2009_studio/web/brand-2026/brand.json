@@ -1,0 +1,55 @@
+{
+  "year": 2026,
+  "theme": "Connect",
+  "font": "Outfit",
+  "colors": [
+    {
+      "name": "Orange",
+      "hex": "#f36c24",
+      "dark": "#c25627",
+      "light": "#fcc4a5"
+    },
+    {
+      "name": "Yellow",
+      "hex": "#fdd600",
+      "dark": "#c0a42f",
+      "light": "#fdf38f"
+    },
+    {
+      "name": "Green",
+      "hex": "#13b24b",
+      "dark": "#018c45",
+      "light": "#b3dbb2"
+    },
+    {
+      "name": "Blue",
+      "hex": "#1f78bb",
+      "dark": "#005c92",
+      "light": "#a7c8e6"
+    },
+    {
+      "name": "Purple",
+      "hex": "#924c9e",
+      "dark": "#563091",
+      "light": "#d5b8d6"
+    },
+    {
+      "name": "Pink",
+      "hex": "#ee3a80",
+      "dark": "#c82363",
+      "light": "#f5b0cb"
+    },
+    {
+      "name": "Red",
+      "hex": "#ee2129",
+      "dark": "#bf2227",
+      "light": "#f69fa8"
+    },
+    {
+      "name": "Gray",
+      "hex": "#b1b5b7",
+      "dark": "#87888a",
+      "light": "#dfe4e4"
+    }
+  ]
+}

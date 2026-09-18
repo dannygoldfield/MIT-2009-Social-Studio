@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mit-2009-social-studio"
-version = "0.1.0"
+version = "0.2.0"
 description = "Independent audio, video, animated text, and assembly tools for MIT 2.009"
 requires-python = ">=3.11"
 dependencies = ["Pillow>=11", "numpy>=2"]
@@ -13,7 +13,7 @@ dependencies = ["Pillow>=11", "numpy>=2"]
 mit2009-studio = "mit2009_studio.server:main"
 
 [tool.setuptools.package-data]
-mit2009_studio = ["web/*"]
+mit2009_studio = ["web/*", "web/brand-2026/*"]
 
 [tool.setuptools.packages.find]
 include = ["mit2009_studio*"]

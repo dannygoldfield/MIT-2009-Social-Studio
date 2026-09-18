@@ -99,10 +99,26 @@ def perform(job):
         if preview.exists():
             row["preview"] = str(preview.relative_to(DATA))
         add_entry(row)
-        (folder / "recipe.json").write_text(json.dumps({"tool": job["tool"], "settings": job["config"], "output_sha256": row["sha256"], "review": "draft", "version": "0.1.0"}, indent=2))
+        (folder / "recipe.json").write_text(json.dumps({"tool": job["tool"], "settings": job["config"], "output_sha256": row["sha256"], "review": "draft", "version": "0.2.0", "edition": "MIT 2.009 2026 Connect", "typeface": "Outfit Bold" if job["tool"] == "text" else None}, indent=2))
         update_job(job, status="done", message="Ready to review and download", result=public_entry(row))
     except Exception as error:
         update_job(job, status="error", message=str(error))
+
+def audio_item_changes(payload):
+    changes = {}
+    if "audio_bucket" in payload:
+        if payload["audio_bucket"] not in {"bed", "effect", "wildcard"}:
+            raise ValueError("Choose Sound beds, Sound Effects, or Wildcards.")
+        changes["audio_bucket"] = payload["audio_bucket"]
+    if "assessment" in payload:
+        if payload["assessment"] not in {"unreviewed", "keep", "maybe", "pass"}:
+            raise ValueError("Choose Keep, Maybe, Pass, or Not assessed.")
+        changes["assessment"] = payload["assessment"]
+    if "notes" in payload:
+        if not isinstance(payload["notes"], str) or len(payload["notes"]) > 500:
+            raise ValueError("Keep your note under 500 characters.")
+        changes["notes"] = payload["notes"]
+    return changes
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -186,6 +202,11 @@ class Handler(BaseHTTPRequestHandler):
                 if not file.is_relative_to(DATA.resolve()):
                     raise ValueError("Invalid media path.")
                 return self.serve_file(file, row["name"] if query.get("download") else None)
+            if path.startswith("/brand-2026/"):
+                asset = (WEB / unquote(path.lstrip("/"))).resolve()
+                if asset.is_relative_to((WEB / "brand-2026").resolve()) and asset.is_file():
+                    return self.serve_file(asset)
+                return self.respond({"error": "Not found"}, 404)
             static = {"/": "index.html", "/app.js": "app.js", "/style.css": "style.css"}
             if path in static:
                 return self.serve_file(WEB / static[path])
@@ -222,6 +243,10 @@ class Handler(BaseHTTPRequestHandler):
                 row = {"id": identity, "name": name, "file": str(temporary.relative_to(DATA)), "sha256": digest(temporary),
                        "created": datetime.now(timezone.utc).isoformat(), "role": "source", **info}
                 row["thumbnail"] = thumbnail(temporary, info["kind"], identity)
+                if info["kind"] == "audio":
+                    bucket = parse_qs(parsed.query).get("audio_bucket", ["wildcard"])[0]
+                    row["audio_bucket"] = bucket if bucket in {"bed", "effect", "wildcard"} else "wildcard"
+                    row["assessment"] = "unreviewed"
                 add_entry(row)
                 temporary = None
                 return self.respond(public_entry(row), 201)
@@ -240,6 +265,19 @@ class Handler(BaseHTTPRequestHandler):
                     JOBS[job["id"]] = job
                 EXECUTOR.submit(perform, job)
                 return self.respond(job, 202)
+            if parsed.path == "/api/audio-item":
+                identity = payload.get("id")
+                entry = lookup(identity)
+                if entry["kind"] != "audio":
+                    raise ValueError("Choose an audio file.")
+                changes = audio_item_changes(payload)
+                with LOCK:
+                    rows = library()
+                    for row in rows:
+                        if row["id"] == identity:
+                            row.update(changes)
+                    save_library(rows)
+                return self.respond({"ok": True})
             if parsed.path == "/api/review":
                 identity = payload.get("id")
                 lookup(identity)

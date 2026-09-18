@@ -25,7 +25,7 @@ def audio(config, lookup, folder, progress):
     for role, identity in entries:
         if not identity:
             if role == "Bed":
-                raise ValueError("Choose a main sound first.")
+                raise ValueError("Choose a sound bed first.")
             continue
         item = asset(lookup, identity, {"audio"})
         wav = folder / f"{role.lower()}-ingredient.wav"
@@ -35,7 +35,7 @@ def audio(config, lookup, folder, progress):
             with wave.open(str(wav), "rb") as source:
                 length = source.getnframes() / source.getframerate()
             if length > duration - 1:
-                raise ValueError("Choose a shorter accent sound; it needs to fit between the first and last half-second.")
+                raise ValueError("Choose a shorter sound effect or a longer mix; the effect needs to fit between the first and last half-second.")
         ingredients.append(Asset(identity, role, "2.009", wav))
     progress("Mixing your sound layers")
     profile = Profile("2.009", number(config.get("main_gain"), -6, -36, 0),
@@ -57,7 +57,7 @@ def audio(config, lookup, folder, progress):
     measured = float(stats["input_i"])
     peak = float(stats["input_tp"])
     if not math.isfinite(measured) or not math.isfinite(peak):
-        raise ValueError("The mix is silent or too short to measure. Choose an audible main sound.")
+        raise ValueError("The mix is silent or too short to measure. Choose an audible sound bed.")
     master_gain = min(target_lufs - measured, -1.0 - peak)
     raw = folder / "mix-before-level.wav"
     track.path.rename(raw)
@@ -164,7 +164,7 @@ def video(config, lookup, folder, progress):
     return target, "silent-video"
 
 def font_path():
-    candidates = ["/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Helvetica.ttc",
+    candidates = [str(Path(__file__).parent / "web/brand-2026/Outfit-Bold.ttf"), "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Helvetica.ttc",
                   "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]
     for path in candidates:
         if Path(path).is_file():

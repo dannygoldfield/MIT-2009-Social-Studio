@@ -1,4 +1,4 @@
-# MIT 2.009 Social Studio
+# MIT 2.009 Social Studio · 2026 Connect
 
 A separate, local studio for Danny Goldfield’s 2.009 social media work. Four tools share this project’s own media library and make downloadable files.
 
@@ -53,3 +53,19 @@ This version works with class photographs, edited clips, and sound files. It doe
 ```
 
 Tests render actual audio, video, animated text, transparent overlays, and assembled MP4s. They check timing, dimensions, image coverage, alpha channels, audio preservation, repeatability, and the media-library path boundary.
+
+## 2026 Connect edition
+
+This copy is permanently branded for 2026: supplied Connect logos, the Outfit typeface, course palette, and mascots. The interface uses a #F4F4F4 background with white panels. The text animator uses bundled Outfit Bold in both its preview and new exports; existing exports are preserved. Its color swatches apply the course palette in one click. The header's **2026 brand kit** offers the logos, colors, font, and mascot references.
+
+Brand assets are independent local files in `mit2009_studio/web/brand-2026/`. The supplied PNGs are unchanged. Screen hex colors were sampled from a color-managed rendering of the supplied CMYK Illustrator palette. Outfit is redistributed under its included SIL Open Font License. No remote fonts or external brand services are used.
+
+The 2026 draft key migrates an existing draft without deleting it. If a 2027 studio is wanted, create another repository and independent data folder, port, brand folder, and browser draft key. Do not turn this installation into the next year's studio.
+
+## Audio: listen before mixing
+
+Audio starts with **Listen & choose**. The three buckets are **Sound beds**, **Sound Effects**, and **Wildcards** (the former music/stem bucket). Each file has a player, Keep / Maybe / Pass assessment, editable bucket, and a note saved when the field loses focus. Playback stops any other audio player. Passed files stay out of the mix menus.
+
+The **New Adobe shortlist** filter contains 15 independently copied, unassessed candidates from Danny's local Adobe library: springs, toys, water, and other playful sound effects. These are filename-based editorial suggestions, not claims of listening approval. Source filenames, source hashes, and suggested uses are kept in the local library and provenance record. The originals are unchanged.
+
+Choose **Use in a mix** to place a file in its bucket's layer, or open **Make a mix**. Sound beds and Wildcards loop; a Sound Effect plays once, away from the boundaries. Each layer has its own player and volume control. The render engine retains its existing internal Bed/Gesture/Music recipe fields for compatibility; user-facing language uses the new bucket names.
