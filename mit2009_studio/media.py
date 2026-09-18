@@ -88,7 +88,7 @@ class FrameWriter:
                 "-pixel_format", "rgba" if alpha else "rgb24", "-video_size", f"{size[0]}x{size[1]}",
                 "-framerate", str(FPS), "-i", "pipe:0"]
         if alpha:
-            args += ["-an", "-c:v", "prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le", "-threads", "4"]
+            args += ["-vf", "scale=in_range=full:out_range=tv:out_color_matrix=bt709", "-an", "-c:v", "prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le", "-threads", "4", "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-color_range", "tv"]
         else:
             args += ["-vf", "scale=in_range=full:out_range=tv:out_color_matrix=bt709,setsar=1"] + encode_args()
         self.process = subprocess.Popen(args + [str(path)], stdin=subprocess.PIPE, stderr=self.log)

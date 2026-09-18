@@ -3,7 +3,7 @@
 A separate, local studio for Danny Goldfield’s 2.009 social media work. Four tools share this project’s own media library and make downloadable files.
 
 1. **Video:** arrange class photographs and edited video clips, change timing, adjust crop focus, choose still frames or gentle motion, and export silent MP4s.
-2. **Audio:** create seeded soundtracks from a main sound, optional music layer, and optional accent. Export 48 kHz stereo WAV files and listen before approving.
+2. **Audio:** create seeded soundtracks from a main sound, optional music layer, and optional accent. Export 48 kHz stereo WAV files at a consistent listening level, with peak-safe constant gain, and listen before approving.
 3. **Text animator:** make standalone animated titles, add text over photographs or videos, or export transparent ProRes MOV overlays. Four styles: Rise & settle, Soft reveal, Word by word, and Typewriter.
 4. **Assemble:** combine selected video, sound, and optional transparent text into a new MP4. Without an overlay the video stream is copied without re-encoding.
 

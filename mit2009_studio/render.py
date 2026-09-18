@@ -48,7 +48,22 @@ def audio(config, lookup, folder, progress):
         samples = np.frombuffer(source.readframes(source.getnframes()), dtype="<i2")
     if np.max(np.abs(samples.astype(np.int32))) >= 32767:
         raise ValueError("The mix is too loud. Lower the sound-layer levels and try again.")
+    progress("Setting a consistent listening level")
+    target_lufs = number(config.get("target_lufs"), -18, -28, -14)
+    measurement = subprocess.run([ffmpeg(), "-hide_banner", "-stream_loop", "-1", "-i", str(track.path), "-t", str(max(4, duration)), "-af", "loudnorm=I=-18:TP=-1:LRA=11:print_format=json", "-f", "null", "-"], capture_output=True, text=True, timeout=60)
+    if measurement.returncode:
+        raise RuntimeError("The soundtrack level could not be measured.")
+    stats = json.loads(measurement.stderr[measurement.stderr.rfind("{"):measurement.stderr.rfind("}")+1])
+    measured = float(stats["input_i"])
+    peak = float(stats["input_tp"])
+    if not math.isfinite(measured) or not math.isfinite(peak):
+        raise ValueError("The mix is silent or too short to measure. Choose an audible main sound.")
+    master_gain = min(target_lufs - measured, -1.0 - peak)
+    raw = folder / "mix-before-level.wav"
+    track.path.rename(raw)
+    run([ffmpeg(), "-v", "error", "-y", "-i", str(raw), "-af", f"volume={master_gain}dB", "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(track.path)])
     details = asdict(track)
+    details["level"] = dict(target_lufs=target_lufs, estimated_output_lufs=measured + master_gain, applied_gain_db=master_gain, true_peak_ceiling_db=-1, method="constant gain; no compression")
     details["path"] = track.path.name
     (folder / "audio-recipe.json").write_text(json.dumps(details, indent=2) + "\n")
     return track.path, "soundtrack"
@@ -60,8 +75,8 @@ def crop_frame(image, size, progress, motion="still", focus_x=.5, focus_y=.5):
     width = height * size[0] / size[1]
     if motion == "pan":
         focus_x += .10 * (p - .5)
-    cx = max(width / 2, min(image.width - width / 2, image.width * focus_x))
-    cy = max(height / 2, min(image.height - height / 2, image.height * focus_y))
+    cx = width / 2 + (image.width - width) * max(0, min(1, focus_x))
+    cy = height / 2 + (image.height - height) * max(0, min(1, focus_y))
     return image.transform(size, Image.Transform.EXTENT, (cx-width/2, cy-height/2, cx+width/2, cy+height/2), Image.Resampling.BICUBIC)
 
 def image_frames(path, size, frames, fit, motion, focus_x=.5, focus_y=.5):
@@ -287,7 +302,7 @@ def assemble(config, lookup, folder, progress):
     if overlay:
         args += ["-i", str(overlay["path"])]
         oi = 2 if sound else 1
-        args += ["-filter_complex", f"[0:v][{oi}:v]overlay=eof_action=pass:repeatlast=0[v]", "-map", "[v]", "-c:v", "libx264", "-crf", "19", "-preset", "fast", "-pix_fmt", "yuv420p", "-threads", "4"]
+        args += ["-filter_complex", f"[0:v][{oi}:v]overlay=eof_action=pass:repeatlast=0,format=yuv420p,setparams=range=limited:color_primaries=bt709:color_trc=bt709:colorspace=bt709[v]", "-map", "[v]", "-c:v", "libx264", "-crf", "19", "-preset", "fast", "-pix_fmt", "yuv420p", "-threads", "4", "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-color_range", "tv"]
     else:
         # Keep the approved video bit-for-bit when no overlay is being added.
         args += ["-map", "0:v:0", "-c:v", "copy"]

@@ -54,6 +54,9 @@ class StudioTests(unittest.TestCase):
         self.assertAlmostEqual(float(info['format']['duration']),2.3,places=3)
         self.assertEqual(info['streams'][0]['sample_rate'],'48000')
         self.assertEqual(info['streams'][0]['channels'],2)
+        levels=json.loads((first.parent/'audio-recipe.json').read_text())['level']
+        self.assertAlmostEqual(levels['estimated_output_lufs'],-18,places=1)
+        self.assertEqual(levels['method'],'constant gain; no compression')
         solo,_,_=self.export('audio',dict(main='sound',duration=2,seed=5))
         self.assertTrue(solo.exists())
 
@@ -107,6 +110,8 @@ class StudioTests(unittest.TestCase):
         path,_,info=self.export('assemble',dict(video='video',audio='sound',overlay='overlay'))
         self.assertEqual(len(info['streams']),2)
         self.assertEqual(info['streams'][0]['width'],270)
+        self.assertEqual(info['streams'][0]['color_primaries'],'bt709')
+        self.assertEqual(info['streams'][0]['color_transfer'],'bt709')
 
     def test_09_short_audio_requires_explicit_loop(self):
         with self.assertRaisesRegex(ValueError,'shorter'):

@@ -1,5 +1,6 @@
 #!/bin/zsh
 cd "${0:A:h}"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 STUDIO_URL="http://127.0.0.1:8772"
 if [[ ! -x .venv/bin/python ]]; then
   print "The studio needs its first setup. Ask Codex to set up MIT-2009-Social-Studio."

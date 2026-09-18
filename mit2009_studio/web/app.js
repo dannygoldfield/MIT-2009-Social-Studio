@@ -1,6 +1,6 @@
 "use strict";
 const $ = id => document.getElementById(id);
-let tool = "video", filter = "all", media = [], sequence = [], selected = -1;
+let tool = "video", filter = "all", media = [], sequence = [], selected = -1, ready = false;
 const copy = {
   video: ["PHOTO & VIDEO GENERATOR", "Make the work move.", "Arrange photographs and edited clips into a silent video. Add sound when you’re ready.", "Create silent video"],
   audio: ["AUDIO GENERATOR", "Find the right feeling.", "Build a new soundtrack from your sound ingredients. Listen, compare, and keep what works.", "Generate soundtrack"],
@@ -16,18 +16,29 @@ async function api(path, body) {
   const r=await fetch(path, body===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json","X-Studio-Request":"1"},body:JSON.stringify(body)});
   const result=await r.json();if(!r.ok)throw Error(result.error||"Something went wrong.");return result;
 }
+function saveDraft(){
+  if(!ready)return;
+  try{const inputs={};document.querySelectorAll(".settings input[id],.settings select[id],.settings textarea[id]").forEach(e=>{if(e.type!=="file")inputs[e.id]=e.type==="checkbox"?e.checked:e.value;});localStorage.setItem("mit2009StudioDraft",JSON.stringify({tool,sequence,selected,inputs}));}catch{}
+}
+function restoreDraft(){
+  try{const draft=JSON.parse(localStorage.getItem("mit2009StudioDraft")||"null");if(!draft)return;
+    sequence=(draft.sequence||[]).filter(e=>item(e.id));selected=Math.min(draft.selected??0,sequence.length-1);
+    Object.entries(draft.inputs||{}).forEach(([id,value])=>{const e=$(id);if(!e||e.type==="file")return;if(e.type==="checkbox")e.checked=Boolean(value);else e.value=value;});
+    if(copy[draft.tool])tool=draft.tool;
+  }catch{}
+}
 function selectTool(next) {
   tool=next;document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===tool));
   document.querySelectorAll(".tool-panel").forEach(p=>p.hidden=p.id!==`panel-${tool}`);
   const [eyebrow,title,description,button]=copy[tool];$("eyebrow").textContent=eyebrow;$("page-title").textContent=title;$("page-description").textContent=description;
   $("render-button").replaceChildren(document.createTextNode(button),element("span","","↗"));$("form-status").textContent="";
-  renderLibrary();updatePreview();
+  renderLibrary();updatePreview();saveDraft();
 }
 function updateSelects() {
   document.querySelectorAll("select[data-library]").forEach(select=>{
     const previous=select.value, kind=select.dataset.library, first=select.options[0].textContent;
     select.replaceChildren(new Option(first,""));
-    media.filter(m=>kind==="audio"?m.kind==="audio":kind==="overlay"?m.role==="text-overlay":kind==="visual"?["image","video"].includes(m.kind)&&m.role!=="text-overlay":m.kind==="video"&&m.role!=="text-overlay").forEach(m=>select.add(new Option(m.name,m.id)));
+    media.filter(m=>{const role=m.ingredient_role;if(!role)return true;if(select.id==="audio-music")return role==="Music";if(select.id==="audio-accent")return role==="Gesture";if(select.id==="audio-main")return role!=="Gesture";return true;}).filter(m=>kind==="audio"?m.kind==="audio":kind==="overlay"?m.role==="text-overlay":kind==="visual"?["image","video"].includes(m.kind)&&m.role!=="text-overlay":m.kind==="video"&&m.role!=="text-overlay").forEach(m=>select.add(new Option(m.name,m.id)));
     if(item(previous))select.value=previous;
   });
 }
@@ -61,6 +72,7 @@ function inputLabel(name,value,type="number",onchange){
   input.addEventListener("input",()=>onchange(Number(input.value)));label.append(input);return label;
 }
 function renderSequence(){
+  saveDraft();
   const list=$("sequence");list.replaceChildren();$("sequence-count").textContent=sequence.length?`${sequence.length} · ${sequence.reduce((s,e)=>s+e.duration,0).toFixed(1)}s`:"0";
   if(!sequence.length){list.append(element("div","empty-sequence","Add photographs or edited clips from your library."));updatePreview();return;}
   sequence.forEach((entry,index)=>{
@@ -82,6 +94,7 @@ function renderSequence(){
   });updatePreview();
 }
 function updatePreview(){
+  $("video-motion").disabled=val("video-fit")==="contain";
   const stage=$("preview-stage");stage.replaceChildren();let m,format="vertical";
   $("preview-heading").textContent=tool==="audio"?"Sound ingredient":tool==="text"?"Style preview":tool==="assemble"?"Selected video":"Framing preview";
   $("preview-note").textContent=tool==="text"?"A guide to the style and placement. Your exported animation appears below for review.":tool==="audio"?"Listen to the main ingredient here. Your new mix will appear below.":"Review your rendered video below before sharing.";
@@ -124,7 +137,7 @@ async function importFiles(files){
 }
 function configuration(){
   if(tool==="video")return{format:val("video-format"),fit:val("video-fit"),motion:val("video-motion"),dissolve:num("video-dissolve"),sequence};
-  if(tool==="audio")return{main:val("audio-main"),music:val("audio-music"),accent:val("audio-accent"),main_gain:num("audio-main-gain"),music_gain:num("audio-music-gain"),accent_gain:num("audio-accent-gain"),duration:num("audio-duration"),seed:num("audio-seed")};
+  if(tool==="audio")return{main:val("audio-main"),music:val("audio-music"),accent:val("audio-accent"),main_gain:num("audio-main-gain"),music_gain:num("audio-music-gain"),accent_gain:num("audio-accent-gain"),duration:num("audio-duration"),seed:num("audio-seed"),target_lufs:num("audio-level")};
   if(tool==="text")return{text:val("text-content"),format:val("text-format"),style:val("text-style"),position:val("text-position"),color:val("text-color"),background:val("text-background"),base:val("text-base"),plate:checked("text-plate"),transparent:checked("text-transparent"),duration:num("text-duration"),start:num("text-start"),hold:num("text-hold")};
   return{video:val("assemble-video"),audio:val("assemble-audio"),overlay:val("assemble-overlay"),gain:num("assemble-gain"),fade:num("assemble-fade"),loop_audio:checked("assemble-loop")};
 }
@@ -159,6 +172,8 @@ async function pollJobs(){
   }catch(e){$("form-status").textContent="The local studio is not responding. Keep its launcher open and refresh this page.";}
   finally{polling=false;}
 }
+document.addEventListener("input",()=>setTimeout(saveDraft,0));
+document.addEventListener("change",()=>setTimeout(saveDraft,0));
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>selectTool(b.dataset.tool));
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));renderLibrary();});
 $("file-input").onchange=e=>importFiles(e.target.files);$("folder-input").onchange=e=>importFiles(e.target.files);
@@ -169,5 +184,5 @@ $("text-duration").addEventListener("change",()=>{$("text-hold").value=Math.max(
 $("text-base").addEventListener("change",()=>{const m=item(val("text-base"));if(m?.kind==="video"){$("text-duration").value=Math.min(180,m.duration).toFixed(1);$("text-hold").value=Math.max(.2,num("text-duration")-num("text-start"));}});
 $("render-button").onclick=renderJob;
 $("text-content").value=$("text-content").value.replace(/\\n/g,"\n");
-(async()=>{try{await refreshLibrary();renderSequence();await pollJobs();}catch(e){$("form-status").textContent=e.message;}})();
+(async()=>{try{await refreshLibrary();restoreDraft();ready=true;selectTool(tool);renderSequence();await pollJobs();}catch(e){$("form-status").textContent=e.message;}})();
 setInterval(pollJobs,1500);
