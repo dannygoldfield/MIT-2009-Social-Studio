@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2.009 Social Studio</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<header class="topbar"><a class="brand" href="/"><b>2.009<span></span></b><div>Social Studio<small>MIT · Product Engineering Processes</small></div></a><span class="local"><i></i> On this Mac</span></header>
+<div class="shell">
+<aside class="library"><div class="section-heading"><h2>Media library</h2><span id="media-count">0 files</span></div><p class="muted">Your photographs, edited clips, and sound ingredients.</p>
+<label class="drop" id="drop-zone"><input type="file" multiple id="file-input" accept="image/*,video/*,audio/*"><span class="plus">＋</span><strong>Add media</strong><span>Choose files or drop them here</span></label>
+<label class="folder-label">Import a folder<input id="folder-input" type="file" webkitdirectory multiple></label>
+<p id="import-status" role="status" class="muted"></p><div class="filters" aria-label="Filter media"><button class="active" data-filter="all">All</button><button data-filter="image">Photos</button><button data-filter="video">Video</button><button data-filter="audio">Audio</button></div><div id="media-list"></div>
+</aside>
+<main>
+<nav class="tools" aria-label="Studio tools"><button data-tool="video" class="active"><span>01</span> Video</button><button data-tool="audio"><span>02</span> Audio</button><button data-tool="text"><span>03</span> Text animator</button><button data-tool="assemble"><span>04</span> Assemble</button></nav>
+<div class="page-heading"><p class="eyebrow" id="eyebrow">PHOTO & VIDEO GENERATOR</p><h1 id="page-title">Make the work move.</h1><p id="page-description">Arrange photographs and edited clips into a silent video. Add sound when you’re ready.</p></div>
+<div class="editor">
+<div class="settings">
+<section class="tool-panel" id="panel-video">
+<div class="two-col"><label>Format<select id="video-format"><option value="vertical">Vertical · 9:16</option><option value="square">Square · 1:1</option><option value="landscape">Wide · 16:9</option></select></label><label>Framing<select id="video-fit"><option value="cover">Fill the frame</option><option value="contain">Show the whole image</option></select></label></div>
+<div class="two-col"><label>Photo motion<select id="video-motion"><option value="push">Slow push in</option><option value="pan">Gentle pan</option><option value="still">Still</option></select></label><label>Dissolve<select id="video-dissolve"><option value="0.08">Almost a cut · 0.08 sec</option><option value="0">No dissolve</option><option value="0.2">Short · 0.2 sec</option><option value="0.4">Soft · 0.4 sec</option></select></label></div>
+<div class="sequence-heading"><h2>Your sequence <span id="sequence-count">0</span></h2><div><input aria-label="Default seconds per item" id="default-duration" type="number" min="0.2" max="120" step="0.1" value="1.4"><span>sec</span><button class="text-button" id="apply-duration">Apply to all</button></div></div>
+<p class="muted small">Add media from the library. Drag to reorder, or use the arrow buttons. Clips export without sound.</p><div id="sequence"></div>
+</section>
+<section class="tool-panel" id="panel-audio" hidden>
+<label>Main sound<select id="audio-main" data-library="audio"><option value="">Choose an audio ingredient</option></select></label><label>Main level <span class="range-value" data-for="audio-main-gain">−6 dB</span><input id="audio-main-gain" type="range" min="-36" max="0" value="-6"></label>
+<label>Music layer <span class="optional">optional</span><select id="audio-music" data-library="audio"><option value="">None</option></select></label><label>Music level <span class="range-value" data-for="audio-music-gain">−12 dB</span><input id="audio-music-gain" type="range" min="-36" max="0" value="-12"></label>
+<label>Accent sound <span class="optional">optional</span><select id="audio-accent" data-library="audio"><option value="">None</option></select></label><label>Accent level <span class="range-value" data-for="audio-accent-gain">−12 dB</span><input id="audio-accent-gain" type="range" min="-36" max="0" value="-12"></label>
+<div class="two-col"><label>Duration · seconds<input type="number" id="audio-duration" min="2" max="180" step="0.1" value="11"></label><label>Variation<input type="number" id="audio-seed" min="0" max="2147483647" value="2009"></label></div><p class="muted small">Creates a new mix from your sound ingredients, with a short overlap at the loop seam. Listen before approving. Change Variation for a different selection and accent timing.</p>
+</section>
+<section class="tool-panel" id="panel-text" hidden>
+<label>Your text<textarea id="text-content" maxlength="300" rows="4" placeholder="What are we building next?">IDEAS INTO\nREALITY.</textarea></label>
+<div class="two-col"><label>Animation<select id="text-style"><option value="rise">Rise & settle</option><option value="fade">Soft reveal</option><option value="words">Word by word</option><option value="type">Typewriter</option></select></label><label>Position<select id="text-position"><option value="center">Center</option><option value="top">Top</option><option value="bottom">Lower caption</option></select></label></div>
+<div class="two-col"><label>Format<select id="text-format"><option value="vertical">Vertical · 9:16</option><option value="square">Square · 1:1</option><option value="landscape">Wide · 16:9</option></select></label><label>Text color<input id="text-color" type="color" value="#ffffff"></label></div>
+<label>Photo or video behind the text <span class="optional">optional</span><select id="text-base" data-library="visual"><option value="">Solid background</option></select></label>
+<div class="two-col"><label>Background color<input type="color" id="text-background" value="#171717"></label><label class="check"><input type="checkbox" id="text-plate"> Add a dark text backing</label></div>
+<div class="three-col"><label>Video length<input type="number" id="text-duration" value="5" min="1" max="180" step="0.1"></label><label>Text starts<input type="number" id="text-start" value="0" min="0" step="0.1"></label><label>Text lasts<input type="number" id="text-hold" value="5" min="0.2" max="180" step="0.1"></label></div>
+<p class="muted small">All times are in seconds. Text over a video preserves its sound.</p><label class="check overlay-check"><input type="checkbox" id="text-transparent"> Export a transparent overlay for the assembler</label><p class="muted small">Transparent overlays download as MOV files. Other text videos download as MP4.</p>
+</section>
+<section class="tool-panel" id="panel-assemble" hidden>
+<label>Your video<select id="assemble-video" data-library="video"><option value="">Choose a video</option></select></label><label>Soundtrack<select id="assemble-audio" data-library="audio"><option value="">Keep the video’s existing sound</option></select></label><label>Animated text overlay <span class="optional">optional</span><select id="assemble-overlay" data-library="overlay"><option value="">No overlay</option></select></label>
+<label>Sound level <span class="range-value" data-for="assemble-gain">0 dB</span><input id="assemble-gain" type="range" min="-36" max="6" value="0"></label><label class="check"><input type="checkbox" id="assemble-loop" checked> Loop the soundtrack if it is shorter than the video</label><label>Sound fade at beginning and end<select id="assemble-fade"><option value="0.25">Very short · 0.25 sec</option><option value="0">None</option><option value="1">Soft · 1 sec</option></select></label>
+<div class="note">A new MP4, ready for your review. Without a text overlay, the assembler preserves the video without re-encoding it.</div>
+</section>
+<div class="export-bar"><label>Export name<input id="export-name" placeholder="e.g. Balloon challenge · Thursday"></label><button id="render-button" class="primary">Create silent video <span>↗</span></button><p id="form-status" role="status"></p></div>
+</div>
+<aside class="preview-panel"><div class="section-heading"><h2 id="preview-heading">Framing preview</h2><span id="format-label">9:16</span></div><div id="preview-stage" class="preview-stage"><div class="empty-preview"><span>2.009</span><p>Choose a photograph<br>to start your edit.</p></div></div><p class="muted small" id="preview-note">Select a photograph in your sequence to adjust its crop. Review the rendered video below before sharing.</p></aside>
+</div>
+<section class="exports"><div class="section-heading"><div><p class="eyebrow">MAKE · COMPARE · CHOOSE</p><h2>Your exports</h2></div><span id="job-count"></span></div><div id="jobs"><p class="muted">Your rendered audio, videos, and animated text will appear here.</p></div></section>
+</main></div>
+</body></html>

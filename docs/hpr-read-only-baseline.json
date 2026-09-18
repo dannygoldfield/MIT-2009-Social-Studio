@@ -1,0 +1,20 @@
+[
+  {
+    "repository": "HPR-Audio-Generator",
+    "commit": "a012dbc3e8c0cd2a4f808edd24be5358c2d9ba63",
+    "tracked_content_sha256": "d8889ee0eeac4df65fa172c251d28bdd00dbe9e1e95353978bc93a22fc147193",
+    "clean": true
+  },
+  {
+    "repository": "HPR-Video-Generator",
+    "commit": "42e81e7ebdd97cbdc33b601b22c52d28653a276e",
+    "tracked_content_sha256": "93be394156d535f2c8884c078b6f63a0e74389491a4a1562d2271105f170a0ca",
+    "clean": true
+  },
+  {
+    "repository": "HPR-Umbrella",
+    "commit": "7440b09f1e90d55e883beb627eadb1358887af62",
+    "tracked_content_sha256": "08fd6be30c0f3ccd0151113bcb2d18810472094651cc5b1ce0efaa8607e8df42",
+    "clean": true
+  }
+]
