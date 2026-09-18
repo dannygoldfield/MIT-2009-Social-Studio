@@ -1,4 +1,4 @@
-# MIT 2.009 Social Studio · 2026 Connect
+# MIT 2.009 Test Studio · 2026 Connect
 
 A separate, local studio for Danny Goldfield’s 2.009 social media work. Four tools share this project’s own media library and make downloadable files.
 
@@ -9,7 +9,7 @@ A separate, local studio for Danny Goldfield’s 2.009 social media work. Four t
 
 ## Open the studio
 
-1. Double-click **Open 2.009 Studio.command**.
+1. Double-click **Open 2.009 Test Studio.command**.
 2. Keep its Terminal window open while using the studio.
 3. Add files, make an export, review it, and use its Download button.
 

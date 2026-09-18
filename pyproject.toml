@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mit-2009-social-studio"
 version = "0.2.0"
-description = "Independent audio, video, animated text, and assembly tools for MIT 2.009"
+description = "MIT 2.009 Test Studio: independent audio, video, animated text, and assembly tools"
 requires-python = ">=3.11"
 dependencies = ["Pillow>=11", "numpy>=2"]
 

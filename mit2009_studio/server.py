@@ -300,12 +300,12 @@ class Handler(BaseHTTPRequestHandler):
                 temporary.unlink(missing_ok=True)
 
 def main():
-    parser = argparse.ArgumentParser(description="Open the private, local MIT 2.009 Social Studio.")
+    parser = argparse.ArgumentParser(description="Open the private, local MIT 2.009 Test Studio.")
     parser.add_argument("--port", type=int, default=8772)
     args = parser.parse_args()
     initialize()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"MIT 2.009 Social Studio: http://127.0.0.1:{args.port}/", flush=True)
+    print(f"MIT 2.009 Test Studio: http://127.0.0.1:{args.port}/", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

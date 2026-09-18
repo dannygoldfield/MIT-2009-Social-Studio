@@ -1,4 +1,4 @@
-# MIT 2.009 Social Studio
+# MIT 2.009 Test Studio
 
 This is a separate production project owned by Danny Goldfield.
 
