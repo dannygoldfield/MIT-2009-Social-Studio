@@ -72,7 +72,7 @@ async function act(fn) {
   }
 }
 function mediaUrl(c, kind = "preview") {
-  return `/api/candidates/${c.id}/file/${kind}`;
+  return `/api/candidates/${c.id}/file/${kind}${c.stage === "audio" && kind === "preview" ? "?playback=1" : ""}`;
 }
 function currentDraft() {
   if (!drafts.has(current))
@@ -180,7 +180,7 @@ function inputPanel() {
       state.assets.find((a) => a.id === currentDraft().audio.reference) ||
       state.assets.filter((a) => a.role === "reference").at(-1);
     const guide = chosen?.analysis.melody_guide;
-    return `<div class="input-panel">${assetSelect("reference", "Your musical phrase")}${chosen ? `<div class="reference-audio"><span class="eyebrow">Your starting idea</span><audio controls preload="metadata" src="/api/assets/${chosen.id}/file"></audio><p class="muted">${esc(chosen.name)} · We start with the first 15 seconds. Your full original stays saved.</p></div>` : ""}<button data-action="melody" ${disabled || (!chosen ? "disabled" : "")}>${guide ? "Check my melody again" : "Find my melody"}</button><span class="muted">One phrase is all you need. No extra sounds to choose.</span></div>${guide ? `<div class="melody-check"><span class="eyebrow">Melody check</span><p>A simple instrument plays the notes we heard. This is a guide for the ensemble, not the finished arrangement.</p><audio controls preload="metadata" src="${esc(guide.url)}"></audio></div>` : ""}`;
+    return `<div class="input-panel">${assetSelect("reference", "Your musical phrase")}${chosen ? `<div class="reference-audio"><span class="eyebrow">Your starting idea</span><audio controls preload="metadata" src="/api/assets/${chosen.id}/file?playback=1"></audio><p class="muted">${esc(chosen.name)} · Playback skips the opening wait. Your full original stays saved.</p></div>` : ""}<button data-action="melody" ${disabled || (!chosen ? "disabled" : "")}>${guide ? "Check my melody again" : "Find my melody"}</button><span class="muted">One phrase is all you need. No extra sounds to choose.</span></div>${guide ? `<div class="melody-check"><span class="eyebrow">Melody check</span><p>A simple instrument plays the notes we heard. This is a guide for the ensemble, not the finished arrangement.</p><audio controls preload="metadata" src="${esc(guide.url)}?playback=1"></audio></div>` : ""}`;
 
   }
   if (stage === "video") {

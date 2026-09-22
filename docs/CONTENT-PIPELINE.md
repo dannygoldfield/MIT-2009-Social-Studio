@@ -22,6 +22,8 @@ Audio → Video → Text → Assembly. Generate 3 → Compare → Rate → Selec
 
 Help a self-identified non-musical person hear that they have a musical idea. One phrase is interpreted by three convincing instrumental ensembles. Retain recognizable melodic contribution, not sung words or the recorded voice. Use expressive phrasing, responsive parts, harmony and an intentional arc. No fourth Original Mix option; the original remains a listening reference. A simple synthesized guide is preparation, never the professional-performance claim. Human listening must assess both quality and recognizable contribution.
 
+Audio players skip opening silence. Once a melody guide exists, the reference starts just before its first detected note, skipping room noise before the phrase. Listening copies retain every internal pause and may be shorter than the 15-second masters. Saved originals, guide scores, candidate downloads, video timing and approved exports stay unchanged. Playback never starts without pressing Play.
+
 ## Video
 
 Use 1–10 photos and either 9:16 or 16:9. Begin with bold, meaningfully different movement/deformation/repetition. Presets remain editable.

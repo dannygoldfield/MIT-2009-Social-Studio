@@ -1,3 +1,11 @@
+# Immediate playback update
+
+28 tests passed in 23.99 seconds on September 22. Added checks for soft opening notes, internal rests, unchanged originals/15-second masters, cached listening copies, byte-range playback and actual candidate preview endpoints. The melody API test now includes room noise before the phrase. Ruff and JavaScript syntax checks passed.
+
+Danny's current reference preview skips 2.864 seconds; the melody preview skips about 2.939 seconds. Both contain substantial audio in the first 100 ms. The local measurement report is under ignored `data/verification/playback/`. Reference and melody Play controls, shorter player durations, and switching between tracks were verified in the embedded browser. One browser tab crashed during automation; a fresh tab successfully played both files. These checks establish playback behavior, not professional orchestration quality.
+
+---
+
 # Current music/Connect milestone
 
 25 tests passed in 20.77 seconds on September 22, including four new melody checks: recovery of a known eight-note phrase and timing, rejection of noise, synthesis from only notes/timing, and API persistence/caching with the old voice-effects route disabled. Code and JavaScript syntax checks passed. The existing 21 tests retain coverage of the earlier DSP and downstream media infrastructure; they do not establish professional orchestration quality.

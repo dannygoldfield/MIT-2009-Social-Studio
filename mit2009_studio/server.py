@@ -99,12 +99,13 @@ def create_app(data_dir=None, start_worker=True, size_override=None):
         return studio.prepare_melody(asset_id)
 
     @app.get("/api/assets/{asset_id}/melody/file")
-    def melody_file(asset_id: str):
+    def melody_file(asset_id: str, playback: bool = False):
         asset = studio.store.one("SELECT * FROM assets WHERE id=?", (asset_id,))
         guide = asset["analysis"].get("melody_guide")
         if not guide:
             raise ValueError("Prepare the melody first.")
-        return FileResponse(studio.store.path(guide["path"]), media_type="audio/wav")
+        path = studio.store.path(guide["path"])
+        return FileResponse(studio.playback_audio(path) if playback else path, media_type="audio/wav")
 
     @app.get("/api/projects")
     def projects():
@@ -189,18 +190,23 @@ def create_app(data_dir=None, start_worker=True, size_override=None):
         return FileResponse(path, filename="2.009-approved-media.zip", media_type="application/zip")
 
     @app.get("/api/assets/{asset_id}/file")
-    def asset_file(asset_id: str):
+    def asset_file(asset_id: str, playback: bool = False):
         item = studio.store.one("SELECT * FROM assets WHERE id=?", (asset_id,))
-        return FileResponse(studio.store.path(item["path"]))
+        path = studio.store.path(item["path"])
+        if playback and item["role"] == "reference":
+            path = studio.playback_audio(path, reference=item)
+        return FileResponse(path)
 
     @app.get("/api/candidates/{candidate_id}/file/{kind}")
-    def candidate_file(candidate_id: str, kind: str):
+    def candidate_file(candidate_id: str, kind: str, playback: bool = False):
         item = studio.candidate(candidate_id)
         if kind not in ("output", "preview", "poster") or kind not in item["artifacts"]:
             raise HTTPException(404, "That media file is not available.")
         path = studio.store.path(item["artifacts"][kind]["path"])
         if not path.is_file():
             raise HTTPException(404, "The media file is missing.")
+        if playback and item["stage"] == "audio" and kind == "preview":
+            path = studio.playback_audio(path)
         return FileResponse(path)
 
     @app.get("/")

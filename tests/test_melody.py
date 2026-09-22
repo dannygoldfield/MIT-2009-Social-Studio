@@ -45,6 +45,11 @@ def test_guide_synthesis_accepts_only_notes_and_timing():
 @pytest.mark.media
 def test_melody_api_persists_guide_and_retires_voice_effects(tmp_path):
     source, _ = make_sources(tmp_path / "source")
+    # Room noise before the phrase must not force a wait after melody detection.
+    original = media.read_audio(source)
+    lead = np.random.default_rng(4).normal(0, 0.002, (2 * media.SAMPLE_RATE, 2))
+    media.write_audio(source, np.concatenate((lead, original)))
+    source_hash = media.digest(source)
     app = create_app(tmp_path / "studio", start_worker=False)
     headers = {"X-Studio-Request": "1"}
     with TestClient(app) as client:
@@ -61,6 +66,22 @@ def test_melody_api_persists_guide_and_retires_voice_effects(tmp_path):
         saved = guide.json()
         assert saved["source_audio_in_output"] is False
         assert client.get(saved["url"]).headers["content-type"] == "audio/wav"
+        for label, url in (("guide", saved["url"]), ("reference", f"/api/assets/{a['id']}/file")):
+            response = client.get(url + "?playback=1")
+            assert response.status_code == 200
+            preview = tmp_path / f"{label}-playback.wav"
+            preview.write_bytes(response.content)
+            y = media.read_audio(preview)
+            assert np.max(np.abs(y[:9600])) > 0.05  # Brief attack protection, never seconds of waiting.
+            assert float(media.probe(preview)["format"]["duration"]) < 13.2
+            assert client.get(url + "?playback=1").content == response.content
+            assert client.get(url + "?playback=1", headers={"Range": "bytes=0-99"}).status_code == 206
+        assert media.digest(source) == source_hash
+        assert (
+            client.get(f"/api/assets/{a['id']}/file").content
+            == app.state.studio.store.path(a["path"]).read_bytes()
+        )
+        assert client.get(saved["url"]).content == app.state.studio.store.path(saved["path"]).read_bytes()
         assert client.post(f"/api/assets/{a['id']}/melody", headers=headers).json() == saved
         detail = client.get(f"/api/projects/{p['id']}").json()
         assert detail["assets"][0]["analysis"]["melody_guide"] == saved

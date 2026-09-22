@@ -78,6 +78,17 @@ def read_audio(path, duration=15):
     return samples
 
 
+def playback_start(samples):
+    """Skip opening silence conservatively; keep quiet attacks and all internal rests."""
+    if not len(samples):
+        return 0
+    peak = np.max(np.abs(samples), axis=1)
+    threshold = max(0.00003, float(peak.max()) * 0.001)
+    audible = np.flatnonzero(peak > threshold)
+    # Five milliseconds protect the attack; silence-only files remain unchanged.
+    return max(0, int(audible[0]) - round(SAMPLE_RATE * 0.005)) if len(audible) else 0
+
+
 def write_audio(path, samples):
     with wave.open(str(path), "wb") as out:
         out.setnchannels(2)

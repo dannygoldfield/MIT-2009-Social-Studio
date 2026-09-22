@@ -1,5 +1,6 @@
 """Candidate rules and transactional decisions, independent of rendering or HTTP."""
 
+import json
 import secrets
 import shutil
 import threading
@@ -21,6 +22,7 @@ class Studio:
     def __init__(self, root):
         self.store = Store(root)
         self.guide_lock = threading.Lock()
+        self.playback_lock = threading.Lock()
 
     def project(self, project_id):
         return self.store.one(
@@ -154,6 +156,31 @@ class Studio:
             if isinstance(error, (OSError, RuntimeError)):
                 raise ValueError("This file could not be read as the selected media type.") from error
             raise
+
+    def playback_audio(self, path, reference=None):
+        """A cached listening copy; never change source, render, or approval files."""
+        source_hash = media.digest(path)
+        start = None
+        guide = reference["analysis"].get("melody_guide") if reference else None
+        if guide:
+            # The note guide identifies the phrase even when room noise precedes it.
+            score = json.loads(self.store.path(guide["score_path"]).read_text())
+            if score.get("source_sha256") == source_hash and score.get("notes"):
+                start = max(0, round((score["notes"][0]["start"] - 0.08) * media.SAMPLE_RATE))
+        key = f"{source_hash}-{start if start is not None else 'silence'}"
+        target = self.store.path(f"playback/v1/{key}.wav")
+        with self.playback_lock:
+            if target.is_file():
+                return target
+            samples = media.read_audio(path)
+            start = media.playback_start(samples) if start is None else start
+            if not 0 < start < len(samples):
+                return path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            temporary = target.with_suffix(".partial.wav")
+            media.write_audio(temporary, samples[start:])
+            temporary.replace(target)
+        return target
 
     def prepare_melody(self, asset_id):
         from .melody import METHOD, prepare_guide
