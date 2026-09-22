@@ -1,3 +1,13 @@
+# Current music/Connect milestone
+
+25 tests passed in 20.77 seconds on September 22, including four new melody checks: recovery of a known eight-note phrase and timing, rejection of noise, synthesis from only notes/timing, and API persistence/caching with the old voice-effects route disabled. Code and JavaScript syntax checks passed. The existing 21 tests retain coverage of the earlier DSP and downstream media infrastructure; they do not establish professional orchestration quality.
+
+The Connect logo/palette/Outfit preview and preparation of Danny's melody were exercised in the in-app browser. Its guide appeared and earlier experiments remained collapsed in history. The original graphics ZIP's seven icons and Outfit font match the existing kit byte-for-byte. No live model, paid request, ensemble performance or human approval has been tested or generated in this milestone.
+
+The current `scripts/browser_smoke.cjs` tests the melody/Connect preview against a disposable local server, generates a synthetic sample, checks the single-input interface and three planned ensembles, prepares a guide, reloads saved work and checks desktop/narrow layouts. Use the setup below. The older full four-stage browser script and report remain preserved at `0cfe313`; the historical results below describe that version.
+
+---
+
 # Testing and observed results
 
 ## Everyday checks
@@ -23,9 +33,9 @@ The suite uses temporary data, creates its own sound/images, and does not alter 
 
 GitHub Actions runs the Python checks on Ubuntu with Python 3.12 and FFmpeg. It does not run the optional browser test or claim subjective creative quality.
 
-## Optional complete browser test
+## Optional browser test
 
-This test rates, selects and creates an explicitly labeled **automated test approval**. Always use the disposable data directory below. It generates all 13 candidates at the application's full 1080 × 1920 size, exports a ZIP, reloads saved work, checks a narrow viewport, and records screenshots/browser errors.
+The current browser test prepares a note-only melody guide and does not rate, approve, export or call a cloud provider. Always use the disposable data directory below. The earlier full workflow test is preserved in Git history as described above.
 
 In one terminal:
 
@@ -47,8 +57,8 @@ Optional environment settings:
 
 - `STUDIO_TEST_URL`: disposable server URL; default `http://127.0.0.1:8774`.
 - `STUDIO_QA_OUTPUT`: report/screenshot directory; default `data/verification/browser`.
-- `STUDIO_TEST_AUDIO`: absolute path to a local recording.
-- `STUDIO_TEST_PHOTOS`: JSON array of 1–10 absolute photo paths, used with a supplied recording.
+- `STUDIO_TEST_AUDIO`: supported by the historical full-workflow script only.
+- `STUDIO_TEST_PHOTOS`: supported by the historical full-workflow script only.
 
 Inspect the resulting media yourself. Numerical checks cannot establish legibility across every photograph, aesthetic difference, musical suitability, or a satisfying story.
 

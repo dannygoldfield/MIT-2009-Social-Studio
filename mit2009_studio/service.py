@@ -2,6 +2,7 @@
 
 import secrets
 import shutil
+import threading
 import zipfile
 from pathlib import Path
 
@@ -11,7 +12,7 @@ from .store import Store, now, packed, uid, unpack
 from .styles import choose_styles
 
 STAGES = ("audio", "video", "text", "assembly")
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 CANDIDATES = """SELECT c.*, (SELECT stars FROM ratings r WHERE r.candidate_id=c.id ORDER BY r.id DESC LIMIT 1)
 AS rating FROM candidates c"""
 
@@ -19,6 +20,7 @@ AS rating FROM candidates c"""
 class Studio:
     def __init__(self, root):
         self.store = Store(root)
+        self.guide_lock = threading.Lock()
 
     def project(self, project_id):
         return self.store.one(
@@ -85,8 +87,8 @@ class Studio:
 
     def add_asset(self, project_id, role, name, temporary):
         project = self.project(project_id)
-        if role not in ("reference", "bed", "effect", "photo"):
-            raise ValueError("Choose audio reference, bed, sound effect, or photo.")
+        if role not in ("reference", "photo"):
+            raise ValueError("Choose a musical phrase or a photograph.")
         identity = uid()
         folder = self.store.path(f"assets/{identity}")
         folder.mkdir(parents=True)
@@ -152,6 +154,40 @@ class Studio:
             if isinstance(error, (OSError, RuntimeError)):
                 raise ValueError("This file could not be read as the selected media type.") from error
             raise
+
+    def prepare_melody(self, asset_id):
+        from .melody import METHOD, prepare_guide
+
+        with self.guide_lock:
+            asset = self.store.one("SELECT * FROM assets WHERE id=?", (asset_id,))
+            if asset["role"] != "reference":
+                raise ValueError("Choose your musical phrase first.")
+            source = self.store.path(asset["path"])
+            if media.digest(source) != asset["normalized_sha256"]:
+                raise ValueError("The recording changed. Upload it again before continuing.")
+            guide = asset["analysis"].get("melody_guide")
+            if (
+                guide
+                and guide["method"] == METHOD
+                and media.digest(self.store.path(guide["path"])) == guide["sha256"]
+            ):
+                return guide
+            folder = self.store.path(f"melodies/{asset_id}/{uid()}")
+            output, score = prepare_guide(source, folder)
+            guide = {
+                "path": self.store.relative(output),
+                "sha256": score["guide_sha256"],
+                "score_path": self.store.relative(folder / "melody.json"),
+                "method": METHOD,
+                "notes": len(score["notes"]),
+                "source_audio_in_output": False,
+                "url": f"/api/assets/{asset_id}/melody/file",
+            }
+            analysis = {**asset["analysis"], "melody_guide": guide}
+            with self.store.connect() as db:
+                db.execute("UPDATE assets SET analysis=? WHERE id=?", (packed(analysis), asset_id))
+                Store.event(db, asset["project_id"], asset["user_id"], "melody_guide_prepared", guide)
+            return guide
 
     def enqueue(self, project_id, request):
         project = self.project(project_id)

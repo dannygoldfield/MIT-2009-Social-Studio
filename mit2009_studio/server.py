@@ -82,8 +82,8 @@ def create_app(data_dir=None, start_worker=True, size_override=None):
         return {
             "version": VERSION,
             "duration": 15,
-            "provider": "local-dsp",
-            "generation": "local transformations; no AI or paid API calls",
+            "provider": "orchestration-pending",
+            "generation": "local melody preparation; ensemble model evaluation pending",
             "presets": load_presets(),
             "data_dir": str(studio.store.root),
         }
@@ -93,6 +93,18 @@ def create_app(data_dir=None, start_worker=True, size_override=None):
         from .demo import create_demo
 
         return create_demo(studio)
+
+    @app.post("/api/assets/{asset_id}/melody")
+    def prepare_melody(asset_id: str):
+        return studio.prepare_melody(asset_id)
+
+    @app.get("/api/assets/{asset_id}/melody/file")
+    def melody_file(asset_id: str):
+        asset = studio.store.one("SELECT * FROM assets WHERE id=?", (asset_id,))
+        guide = asset["analysis"].get("melody_guide")
+        if not guide:
+            raise ValueError("Prepare the melody first.")
+        return FileResponse(studio.store.path(guide["path"]), media_type="audio/wav")
 
     @app.get("/api/projects")
     def projects():
@@ -129,6 +141,11 @@ def create_app(data_dir=None, start_worker=True, size_override=None):
 
     @app.post("/api/projects/{project_id}/generate", status_code=202)
     def generate(project_id: str, request: Generate):
+        if request.stage == "audio":
+            raise HTTPException(
+                409,
+                "Ensemble orchestration is being evaluated. Check your melody first; the earlier voice-effects generator has been retired.",
+            )
         return studio.enqueue(project_id, request)
 
     @app.post("/api/candidates/{candidate_id}/rating")
@@ -141,6 +158,14 @@ def create_app(data_dir=None, start_worker=True, size_override=None):
 
     @app.post("/api/jobs/{job_id}/retry", status_code=202)
     def retry(job_id: str):
+        batch = studio.store.one(
+            "SELECT b.stage FROM batches b JOIN jobs j ON j.batch_id=b.id WHERE j.id=?", (job_id,)
+        )
+        if batch["stage"] == "audio":
+            raise HTTPException(
+                409,
+                "The earlier voice-effects generator has been retired. Prepare a melody guide for the new orchestration test.",
+            )
         return studio.retry(job_id)
 
     @app.post("/api/projects/{project_id}/approvals", status_code=201)

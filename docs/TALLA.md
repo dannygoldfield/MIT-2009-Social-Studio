@@ -2,6 +2,10 @@
 
 Danny wants this to become a tool you can understand, challenge, improve, and potentially take substantial ownership of. Your first job is not to preserve the architecture out of politeness.
 
+## Latest direction, September 22
+
+Danny clarified that audio should make a self-identified non-musical person feel musical: their own phrase, thoughtfully developed by convincing instrumental ensembles. No intelligible sung words and no bed/effects buckets. Read ORCHESTRATION-TRIAL.md first. The current preview has Connect branding, one musical input and a local melody-check tool. The pro-level orchestration claim is explicitly unfulfilled pending a live model experiment. The earlier complete procedural prototype is at `0cfe313`; the descriptions below explain that foundation, not a claim that its DSP output meets the new brief.
+
 ## The product hypothesis
 
 Three meaningfully different possibilities → a human compares and selects → the next stage responds. Repeat across Audio, Video, Keyword, and Assembly. The final author explains “Why this one?” and explicitly approves the result. Choice and authorship are the product, not just a wrapper around generation.

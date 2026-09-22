@@ -16,7 +16,7 @@ The inspected HPR commits and hashes remain in `hpr-read-only-baseline.json`. Th
 
 FastAPI uses MIT terms. The installed NumPy 2.5.3 metadata declares `BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0`; Pillow 12.3.0 declares `MIT-CMU`. Consult their bundled notices for component-specific terms. FFmpeg's license depends on how it is built; libx264-enabled builds introduce GPL considerations. We invoke the user's installed FFmpeg and do not bundle a binary. The current application is a private collaboration repository, without a new application-level open-source license declaration.
 
-No code was copied from Remotion, MoviePy, ComfyUI, librosa, AudioCraft, ACE-Step, or stable-audio-tools. Their research recommendations and license distinctions are recorded in DISCOVERY-2026-09-22.md. Code licenses do not automatically establish model-weight rights, generated-output rights or source-media permissions.
+librosa 1.0.0 (ISC) is now a pinned dependency used through its pYIN API for a note-only melody guide; its code is not vendored. No code was copied from Remotion, MoviePy, ComfyUI, AudioCraft, ACE-Step, or stable-audio-tools. Their research recommendations and license distinctions are recorded in DISCOVERY-2026-09-22.md. Code licenses do not automatically establish model-weight rights, generated-output rights or source-media permissions.
 
 ## Media
 

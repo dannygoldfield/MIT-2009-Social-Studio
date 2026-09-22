@@ -1,3 +1,5 @@
+> Current audio revision: see ORCHESTRATION-TRIAL.md. The HTTP API pauses new voice-effects generation while the new ensemble provider is evaluated. `melody.py` and `Studio.prepare_melody` prepare and cache note-only guides. The lower-level legacy DSP renderer remains for regression coverage and old recipes; it does not implement the new quality target. New uploads accept only reference audio or photographs. Connect styling uses the existing brand assets.
+
 # Architecture and developer guide
 
 ## One application

@@ -1,6 +1,6 @@
 # 2.009 content pipeline playbook
 
-Status: discovery reviewed; the first complete local application is implemented. Danny asked for a simple, visible product and a repeatable way to check our work. Current scope uses local transformations, with no paid generation or public deployment. See [testing](TESTING.md) for evidence and [limitations](LIMITATIONS.md) for the remaining work.
+Status: revised musical-authorship direction. The earlier procedural four-stage prototype is preserved in Git. The current preview prepares a note-only melody guide and shows three ensemble directions; professional orchestration awaits a bounded live model test. See ORCHESTRATION-TRIAL.md.
 
 ## Purpose
 
@@ -12,7 +12,7 @@ One candidate-selection engine. AI expands possibilities; humans select and rema
 
 ## Inputs
 
-Personal audio; optional musical/sound beds and effects; 1–10 photographs; exactly one Keyword. Preserve uploaded originals and useful source attribution. Never commit private course media or credentials.
+One personal musical phrase; 1–10 photographs; exactly one Keyword. No sound-bed/effects buckets. Preserve uploaded originals and useful source attribution. Never commit private course media or credentials.
 
 ## Workflow
 
@@ -20,7 +20,7 @@ Audio → Video → Text → Assembly. Generate 3 → Compare → Rate → Selec
 
 ## Audio
 
-Three interpretations from different editable style families. Original Mix is separate: preservation plus support from beds/effects. Local transformations are allowed initially and must not be mislabeled as AI. Short/long source handling must be visible; preserve the full original even when an output uses an excerpt.
+Help a self-identified non-musical person hear that they have a musical idea. One phrase is interpreted by three convincing instrumental ensembles. Retain recognizable melodic contribution, not sung words or the recorded voice. Use expressive phrasing, responsive parts, harmony and an intentional arc. No fourth Original Mix option; the original remains a listening reference. A simple synthesized guide is preparation, never the professional-performance claim. Human listening must assess both quality and recognizable contribution.
 
 ## Video
 
@@ -93,3 +93,7 @@ Small supervised Story Officer alpha in roughly two weeks; course photo library;
 2026-09-22: FFmpeg rejected a leading-dot fade duration; use 0.25, not .25. Browser tests now wait for the exact requested job ID. Photo thumbnails use a fixed flex basis to avoid overlap. Retain these lessons in checks instead of assuming an HTTP success proves a correct output.
 
 2026-09-22: A redistributable practice project creates its own geometry and melody. Tests render both orientations, inspect actual alpha pixels, check source preservation, immutable approval/export hashes, failed-job recovery and upstream-selection invalidation. Detailed commands/results are in TESTING.md.
+
+2026-09-22, feedback revision: Danny rejected recognizable sung words and sound-bed/effects buckets. The conceptual collaborators are musical ensembles interpreting the user's phrase. He emphasized professional orchestration and the experience “I am musical.” This supersedes the earlier DSP-style and Original Mix requirements. The earlier implementation decisions above remain historical.
+
+2026-09-22, branding: Danny supplied Graphics.zip. Its seven character icons and Outfit font match the existing Connect kit byte-for-byte; the palette and character sheets were visually inspected. Use the original Connect wordmark, Outfit and supplied colors rather than redrawing the logo.

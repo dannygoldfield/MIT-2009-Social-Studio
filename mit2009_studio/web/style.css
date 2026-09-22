@@ -7,8 +7,8 @@
 }
 body {
   margin: 0;
-  background: #f3f5f1;
-  color: #202a29;
+  background: #faf9fc;
+  color: #242024;
   font-family: Outfit, system-ui, sans-serif;
   font-size: 16px;
 }
@@ -29,7 +29,7 @@ button {
   border: 0;
   border-radius: 9px;
   padding: 11px 17px;
-  background: #213d37;
+  background: #563091;
   color: white;
   cursor: pointer;
   font-weight: 550;
@@ -42,12 +42,12 @@ button:disabled {
   cursor: not-allowed;
 }
 a {
-  color: #245e52;
+  color: #005c92;
 }
 header {
   height: 94px;
   background: #fff;
-  border-bottom: 1px solid #dce2da;
+  border-bottom: 1px solid #e4dce8;
   display: flex;
   align-items: center;
   padding: 0 34px;
@@ -65,7 +65,7 @@ header {
 .brand-mark {
   font-size: 29px;
   letter-spacing: -2px;
-  background: #d9ee74;
+  background: #fdd600;
   padding: 9px;
   border-radius: 12px;
 }
@@ -95,8 +95,8 @@ header {
   min-height: calc(100vh - 94px);
 }
 aside {
-  background: #edf0e8;
-  border-right: 1px solid #dce2da;
+  background: #f1ecf5;
+  border-right: 1px solid #e4dce8;
   padding: 28px 20px;
   display: flex;
   flex-direction: column;
@@ -112,7 +112,7 @@ aside {
 .sidebar-heading button {
   padding: 2px 8px;
   background: none;
-  color: #213d37;
+  color: #563091;
   font-size: 22px;
 }
 #projects {
@@ -129,7 +129,7 @@ aside {
 }
 #projects button.active {
   background: #fff;
-  color: #162b25;
+  color: #563091;
   box-shadow: 0 2px 6px #26392308;
 }
 #projects button small {
@@ -208,8 +208,8 @@ h3 {
   white-space: nowrap;
 }
 .stages button.active {
-  color: #213d37;
-  border-color: #213d37;
+  color: #563091;
+  border-color: #563091;
 }
 .stages button.done {
   color: #356556;
@@ -579,7 +579,7 @@ summary {
 }
 .welcome-steps div {
   padding: 24px 15px;
-  border: 1px solid #d0daca;
+  border: 1px solid #d5b8d6;
   border-radius: 13px;
   background: #fff;
 }
@@ -610,7 +610,7 @@ dialog h2 {
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: #213d37;
+  background: #563091;
   color: #fff;
   padding: 15px 24px;
   border-radius: 12px;
@@ -719,3 +719,20 @@ dialog h2 {
     display: none;
   }
 }
+
+/* Connect 2026: original wordmark, Outfit, and the supplied palette. */
+header { border-top: 6px solid transparent; border-image: linear-gradient(90deg,#1f78bb 0 14%,#ee3a80 14% 28%,#13b24b 28% 42%,#924c9e 42% 56%,#ee2129 56% 70%,#fdd600 70% 85%,#f36c24 85%) 1; }
+.connect-wordmark { width: 238px; height: 62px; object-fit: cover; object-position: center; }
+.studio-label { border-left: 1px solid #dfe4e4; padding-left: 17px; letter-spacing: 2px; font-size: 15px; }
+.studio-label small { font-size: 8px; letter-spacing: 1px; }
+.reference-audio { width: 100%; }
+.reference-audio audio { display: block; margin-top: 12px; max-width: 100%; }
+.melody-check { padding: 20px 24px; background: #f0e8f2; border-left: 4px solid #924c9e; border-radius: 8px; margin: 20px 0 30px; }
+.melody-check p { max-width: 660px; }
+.melody-check audio { max-width: 100%; }
+.ensemble-preview { margin-top: 34px; }
+.ensemble-brief { border: 1px solid #e4dce8; border-top: 5px solid var(--ensemble-color); border-radius: 14px; background: #fff; padding: 22px; }
+.ensemble-brief h3 { margin-top: 18px; }
+.ensemble-brief p { color: #625967; font-size: 15px; line-height: 1.55; }
+.ensemble-brief .tag { font-size: 10px; color: #625967; }
+@media (max-width: 760px) { .connect-wordmark { width: 182px; height: 51px; } .studio-label { display: none; } header { gap: 8px; } .brand { min-width: 0; } }

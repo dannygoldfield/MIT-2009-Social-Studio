@@ -6,18 +6,13 @@ Generate three possibilities, compare, rate, select, and advance. Make three fin
 
 Built for Danny, Talla, and the 2.009 TAs, with a small student trial as the next milestone. The purpose is entertaining, inspiring stories about the course and interest in the **December 7, 2026 final presentations livestream**. Humans retain taste, authorship, and approval.
 
-## What works in this version
+## Current direction: musical authorship
 
-- Persistent projects, uploaded originals, generation settings, rating history, saved five-star winners, selections, jobs, and approval records.
-- **15 seconds throughout.** Vertical 9:16 or horizontal 16:9.
-- Three audio interpretations, plus a separately presented **Original Mix** that preserves the recording's timing, pitch, and order within the excerpt.
-- Three bold photographic treatments from 1–10 images; three transparent animations of one Keyword.
-- Three final edits using the exact selected Audio, Video, and Text ingredients.
-- Changes to earlier selections clear affected later selections without deleting media or history.
-- Explicit explanation and approval, followed by an MP4 + provenance ZIP export. Nothing is published automatically.
-- A built-in practice project with locally generated sample images and sound. No private student media is included in Git.
+Danny's revised brief is a musical phrase interpreted by three convincing ensembles, with no recognizable lyrics. The interface now uses the Connect wordmark, supplied color palette and Outfit font, with one musical input and no bed/effects controls.
 
-**Generation is currently local signal/image processing, not a learned AI model.** The files are real, not mock players. Cloud generation is researched but not integrated or live-tested. This release proves the complete interaction and preserves a small provider boundary for the next iteration.
+**This is a preparation milestone, not a finished professional orchestration release.** The local melody check extracts estimated notes and plays a voice-free instrumental guide. Bass-heavy dance, chamber trio and jazz trio are clearly marked as directions in development. New generation through the earlier voice-effects API is paused; old experiments and saved media remain available as history. See [ORCHESTRATION-TRIAL.md](docs/ORCHESTRATION-TRIAL.md) for the concrete experiment and listening acceptance criteria. A paid provider trial still needs authorization and API access.
+
+The earlier complete four-stage procedural prototype is preserved at commit `0cfe313`. Its project, comparison/rating/selection, video, alpha Keyword, assembly, provenance and approval/export infrastructure remain in this codebase. Existing files and decisions are not migrated or rewritten. New end-to-end music projects await a provider that meets the revised audio brief.
 
 ## Run locally
 
@@ -38,7 +33,7 @@ Install FFmpeg with `brew install ffmpeg` on macOS or `sudo apt install ffmpeg` 
 
 On a Mac, after setup, double-click **Open 2.009 Studio.command**. The older Test Studio shortcut also opens the new application.
 
-Click **Try the sample project**, then Generate, rate a candidate, select it, and continue through the four stages. Use **CONNECT** as the sample Keyword. Sample selections and approvals are yours to make; the app does not automatically make them.
+Click **Try the sample project** or open a saved project, then **Find my melody**. The simple guide lets you check what the system heard. The three professional ensemble directions are not available as generated choices yet; no API request or charge occurs when preparing a guide.
 
 ## Keep your work
 
@@ -57,7 +52,7 @@ Do not run two studio processes against the same folder. The app deliberately do
 .venv/bin/ruff check mit2009_studio tests
 ```
 
-Tests render actual 15-second audio/video/text/assembly at smaller dimensions for speed, in both orientations. They inspect duration, frame counts, audio, actual transparent pixels, persistence, approval/export integrity, failure recovery, and selection rules. A separate browser test exercises full-resolution output and is described in [TESTING.md](docs/TESTING.md).
+Tests render actual 15-second audio/video/text/assembly at smaller dimensions for speed, in both orientations. They inspect duration, frame counts, audio, actual transparent pixels, persistence, approval/export integrity, failure recovery, and selection rules. The previous full-resolution browser workflow applies to the preserved procedural release; current melody/brand checks are described in [TESTING.md](docs/TESTING.md).
 
 ## Start here, Talla
 

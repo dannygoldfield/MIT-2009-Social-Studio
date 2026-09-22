@@ -1,3 +1,5 @@
+> Current milestone: professional ensemble generation is **not implemented or live-tested**. The user can prepare a local, wordless melody guide; the guide is not an orchestration. Audio generation in the previous prototype is retired from the UI/API. The older DSP/Original Mix limitations below describe that preserved prototype. See ORCHESTRATION-TRIAL.md for the revised brief and gates.
+
 # Known limitations and next steps
 
 ## Deliberately unfinished

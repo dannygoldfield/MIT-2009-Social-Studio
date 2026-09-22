@@ -117,7 +117,7 @@ function openCreate() {
 function welcome() {
   state = null;
   $("#main").innerHTML =
-    `<div class="welcome"><span class="eyebrow">MIT 2.009 · HUMAN CHOICES, REAL STORIES</span><h1>Start with something yours.<br>See where it can go.</h1><p class="intro">A sound. A few photographs. One word. Compare three possibilities at a time, shape a 15-second story, and explain why it carries your name.</p><div class="welcome-steps">${stages.map((s, i) => `<div><small>0${i + 1}</small>${names[s]}</div>`).join("")}</div><div class="actions"><button data-action="new">Start a project →</button><button class="secondary" data-action="demo">Try the sample project</button></div><p class="muted welcome-note">This first version makes real media with local sound and image transformations. AI providers are a future extension. Your projects and choices stay on this computer.</p></div>`;
+    `<div class="welcome"><span class="eyebrow">MIT 2.009 · HUMAN CHOICES, REAL STORIES</span><h1>Start with something yours.<br>See where it can go.</h1><p class="intro">A sound. A few photographs. One word. Compare three possibilities at a time, shape a 15-second story, and explain why it carries your name.</p><div class="welcome-steps">${stages.map((s, i) => `<div><small>0${i + 1}</small>${names[s]}</div>`).join("")}</div><div class="actions"><button data-action="new">Start a project →</button><button class="secondary" data-action="demo">Try the sample project</button></div><p class="muted welcome-note">This first version makes real media with local melody preparation and image animation. AI providers are a future extension. Your projects and choices stay on this computer.</p></div>`;
 }
 function selectedCandidate(s) {
   return state.candidates.find((c) => c.id === state.selections[s]);
@@ -135,8 +135,8 @@ function render() {
 function stageHeading() {
   const text = {
     audio: [
-      "Your sound. Three directions.",
-      "Start with a recording that matters to you. Listen, rate, and choose what feels right.",
+      "Your melody. A world of possibilities.",
+      "Hum, sing, or play a phrase. Start with what comes naturally—we’ll build from your musical idea.",
     ],
     video: [
       "Give your story a different shape.",
@@ -165,12 +165,12 @@ function jobPanel() {
   const count = stage === "audio" ? 4 : 3;
   return `<div class="job ${job.status === "failed" ? "failed" : ""}" aria-live="polite"><strong>${esc(job.progress)}</strong>${job.status === "failed" ? `<p class="error">${esc(job.error)}</p><button class="secondary" data-retry="${job.id}">Retry missing candidates</button>` : `<p class="muted">${done} of ${count} ready. You can leave this page; keep the studio running.</p><progress max="${count}" value="${done}"></progress>`}</div>`;
 }
-function assetSelect(role, label, optional = false) {
+function assetSelect(role, label) {
   const items = state.assets.filter((a) => a.role === role);
   const draft = currentDraft();
   const selected = draft.audio[role] || items.at(-1)?.id || "";
   draft.audio[role] = selected;
-  return `<label>${label}<select data-audio-role="${role}" ${!items.length ? "disabled" : ""}>${optional ? '<option value="">Built-in sound</option>' : ""}${items.map((a) => `<option value="${a.id}" ${a.id === selected ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select><input type="file" data-upload="${role}" accept="audio/*" aria-label="Upload ${label.toLowerCase()}"></label>`;
+  return `<label>${label}<select data-audio-role="${role}" ${!items.length ? "disabled" : ""}>${items.map((a) => `<option value="${a.id}" ${a.id === selected ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select><input type="file" data-upload="${role}" accept="audio/*" aria-label="Upload ${label.toLowerCase()}"></label>`;
 }
 function inputPanel() {
   const busy = state.jobs.some((j) => ["queued", "running"].includes(j.status));
@@ -179,7 +179,9 @@ function inputPanel() {
     const chosen =
       state.assets.find((a) => a.id === currentDraft().audio.reference) ||
       state.assets.filter((a) => a.role === "reference").at(-1);
-    return `<div class="input-panel">${assetSelect("reference", "Personal audio")}<details style="width:100%"><summary>Optional: use your own bed or sound effect</summary><div class="input-panel">${assetSelect("bed", "Bed", true)}${assetSelect("effect", "Sound effect", true)}</div></details>${chosen ? `<div style="width:100%"><audio controls preload="metadata" src="/api/assets/${chosen.id}/file"></audio><p class="muted">${esc(chosen.name)} · ${chosen.analysis.original_duration?.toFixed(1)}s original. Outputs use the first 15 seconds; shorter recordings are padded. The full original is preserved.</p></div>` : ""}<button data-action="generate" ${disabled || (!chosen ? "disabled" : "")}>Generate 3 + Original Mix</button><span class="muted">Different interpretations. One preservation mix.</span></div>`;
+    const guide = chosen?.analysis.melody_guide;
+    return `<div class="input-panel">${assetSelect("reference", "Your musical phrase")}${chosen ? `<div class="reference-audio"><span class="eyebrow">Your starting idea</span><audio controls preload="metadata" src="/api/assets/${chosen.id}/file"></audio><p class="muted">${esc(chosen.name)} · We start with the first 15 seconds. Your full original stays saved.</p></div>` : ""}<button data-action="melody" ${disabled || (!chosen ? "disabled" : "")}>${guide ? "Check my melody again" : "Find my melody"}</button><span class="muted">One phrase is all you need. No extra sounds to choose.</span></div>${guide ? `<div class="melody-check"><span class="eyebrow">Melody check</span><p>A simple instrument plays the notes we heard. This is a guide for the ensemble, not the finished arrangement.</p><audio controls preload="metadata" src="${esc(guide.url)}"></audio></div>` : ""}`;
+
   }
   if (stage === "video") {
     const photos = state.assets.filter((a) => a.role === "photo");
@@ -209,6 +211,15 @@ function card(c) {
   return `<article class="candidate ${selected ? "selected" : ""}" data-candidate="${c.id}"><div class="candidate-top"><div class="option-label"><span>${c.kind === "original" ? "PRESERVATION + ENHANCEMENT" : "OPTION " + c.slot}</span><span class="winner">${c.winner_at ? "★ Saved winner" : ""}</span></div><h3>${esc(c.settings.style.name)}</h3><p>${esc(c.settings.style.description)}</p></div><div class="candidate-body">${ready ? (stage === "audio" ? waveform(c) + `<audio controls preload="metadata" src="${mediaUrl(c)}"></audio>` : `<video controls playsinline preload="none" poster="${mediaUrl(c, "poster")}" src="${mediaUrl(c)}"></video>`) : `<div class="sound-art muted">${c.status === "failed" ? "Needs a retry" : c.status === "running" ? "Rendering…" : "Waiting…"}</div>`}${c.error ? `<p class="error">${esc(c.error)}</p>` : ""}<div class="stars" role="group" aria-label="Rate ${esc(c.settings.style.name)}">${[1, 2, 3, 4, 5].map((n) => `<button data-rate="${c.id}" data-stars="${n}" aria-label="${n} star${n === 1 ? "" : "s"} for ${esc(c.settings.style.name)}" aria-pressed="${c.rating === n}" class="${n <= c.rating ? "filled" : ""}" ${ready ? "" : "disabled"}>★</button>`).join("")}</div>${c.stale ? '<p class="muted">Made for earlier selections. Regenerate to use with your current choices.</p>' : ""}<button class="select-button" data-select="${c.id}" ${!ready || c.stale || !c.rating ? "disabled" : ""}>${selected ? "✓ Selected" : !c.rating ? "Rate, then select" : "Select this one"}</button><details class="provenance"><summary>How it was made</summary><p class="muted">${esc(c.settings.provider)} · ${esc(c.settings.renderer_version)} · ${c.analysis.elapsed_seconds?.toFixed(1) || "—"}s to render</p><pre>${esc(JSON.stringify({ settings: c.settings, sources: c.sources, earlier_choices: c.context, analysis: c.analysis }, null, 2))}</pre>${ready ? `<a href="${mediaUrl(c, "output")}" download>Download draft ${stage === "text" ? "alpha MOV" : "file"}</a>` : ""}</details></div></article>`;
 }
 function comparison() {
+  if (stage === "audio") {
+    const briefs = [
+      ["#1f78bb", "Bass-heavy dance", "Your phrase becomes the hook: deep bass, a tight drum groove, and a lead that opens into a bigger arrangement."],
+      ["#924c9e", "Chamber trio", "Piano, violin, and cello listen and respond—sharing your melody with warmth, space, and expressive phrasing."],
+      ["#ee3a80", "Jazz trio", "Piano, upright bass, and drums find the swing in your phrase, then playfully develop it together."],
+    ];
+    const older = state.candidates.filter(c => c.stage === "audio");
+    return `<section class="ensemble-preview"><div class="batch-heading"><span class="eyebrow">Three ensembles. Your musical idea.</span></div><p class="muted">Next: convincing instrumental performances built around your phrase. We’re testing orchestration quality before offering these as finished choices.</p><div class="candidate-grid">${briefs.map(([color, name, description]) => `<article class="ensemble-brief" style="--ensemble-color:${color}"><span class="tag">In development</span><h3>${name}</h3><p>${description}</p></article>`).join("")}</div></section>${older.length ? `<details class="history"><summary>Earlier sound experiments</summary><p class="muted">These came from the retired voice-effects prototype and may contain recognizable words. They are saved as history, not examples of the new ensemble direction.</p><div class="candidate-grid">${older.map(c => `<article class="ensemble-brief"><h3>${esc(c.settings.style.name)}</h3>${c.status === "ready" ? `<audio controls preload="none" src="${mediaUrl(c)}"></audio>` : `<p>${esc(c.status)}</p>`}</article>`).join("")}</div></details>` : ""}`;
+  }
   const batches = state.batches.filter((b) => b.stage === stage);
   if (!batches.length)
     return '<div class="empty">Your three possibilities will appear here.</div>';
@@ -223,6 +234,7 @@ function comparison() {
     )}</div>${original ? `<section class="original"><div><span class="tag">A DIFFERENT POSSIBILITY</span><h2>Original Mix</h2><p>Your contribution stays in the foreground. Your original recording, supported by a bed and sound effects.</p><p class="muted">Preserved timing, pitch, and order within the 15-second excerpt. This is not a fourth interpretation.</p></div>${card(original)}</section>` : ""}<details class="history"><summary>Earlier batches & saved winners (${batches.length} batches · ${state.candidates.filter((c) => c.stage === stage && c.winner_at).length} winners)</summary><div class="history-buttons">${batches.map((b, i) => `<button class="secondary" data-batch="${b.id}">Batch ${i + 1}${state.candidates.some((c) => c.batch_id === b.id && c.winner_at) ? " · ★" : ""}</button>`).join("")}</div><p class="muted">A winner remains saved even if you later change its rating. New generation is an explicit choice.</p></details>`;
 }
 function advancePanel() {
+  if (stage === "audio") return "";
   const c = selectedCandidate(stage);
   if (!c) return "";
   if (stage !== "assembly")
@@ -239,7 +251,7 @@ async function generate() {
   const d = currentDraft();
   const body = { stage, asset_ids: [] };
   if (stage === "audio")
-    body.asset_ids = Object.values(d.audio).filter(Boolean);
+    body.asset_ids = [d.audio.reference].filter(Boolean);
   if (stage === "video") body.asset_ids = d.photos || [];
   if (stage === "text") body.keyword = d.keyword;
   await api("/projects/" + current + "/generate", body);
@@ -350,6 +362,15 @@ document.addEventListener("click", (event) => {
   act(async () => {
     if (node.dataset.project) await openProject(node.dataset.project);
     if (node.dataset.action === "generate") await generate();
+    if (node.dataset.action === "melody") {
+      node.disabled = true;
+      node.textContent = "Listening for your melody…";
+      try {
+        await api("/assets/" + currentDraft().audio.reference + "/melody", {});
+      } finally {
+        await refresh();
+      }
+    }
     if (node.dataset.action === "demo") {
       const p = await api("/demo", {});
       await openProject(p.id);
