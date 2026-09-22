@@ -5,15 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mit-2009-social-studio"
 version = "0.2.0"
-description = "MIT 2.009 Test Studio: independent audio, video, animated text, and assembly tools"
-requires-python = ">=3.11"
-dependencies = ["Pillow>=11", "numpy>=2"]
+description = "Human-led candidate selection for MIT 2.009 media"
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "python-multipart>=0.0.20,<1", "numpy>=2,<3", "Pillow>=11,<13", "httpx>=0.28,<1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
 
 [project.scripts]
 mit2009-studio = "mit2009_studio.server:main"
 
 [tool.setuptools.package-data]
-mit2009_studio = ["web/*", "web/brand-2026/*"]
+mit2009_studio = ["web/*", "web/brand-2026/*", "presets.json", "schema.sql"]
 
 [tool.setuptools.packages.find]
 include = ["mit2009_studio*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["media: renders and inspects real media using FFmpeg"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B"]
+ignore = ["B008"]

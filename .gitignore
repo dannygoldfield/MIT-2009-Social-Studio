@@ -9,3 +9,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+.ruff_cache/
+!.env.example
+node_modules/

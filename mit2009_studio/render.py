@@ -1,316 +1,299 @@
-from __future__ import annotations
-from dataclasses import asdict
-from pathlib import Path
-import json
+"""Real 15-second media renderers, separate from selection and approval policy."""
+
 import math
-import subprocess
-import wave
-from PIL import Image, ImageColor, ImageDraw, ImageFont, ImageOps
+from bisect import bisect_right
+from functools import lru_cache
+from pathlib import Path
+
 import numpy as np
-from .media import FPS, FrameWriter, encode_args, ffmpeg, image_rgb, number, probe, run, size_for
-from .audio_core.config import Asset, Config, Profile, Recipe
-from .audio_core.generator import generate
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-def asset(lookup, identity, kinds=None):
-    item = lookup(identity)
-    if kinds and item["kind"] not in kinds:
-        raise ValueError("Choose a file of the correct type for this step.")
-    return item
+from . import media
+from .analysis import audio_features, image_features
+from .providers import AudioRequest
+from .providers.local import LocalAudioProvider
 
-def audio(config, lookup, folder, progress):
-    duration = number(config.get("duration"), 11, 2, 180)
-    seed = int(number(config.get("seed"), 2009, 0, 2147483647))
-    entries = [("Bed", config.get("main")), ("Gesture", config.get("accent")), ("Music", config.get("music"))]
-    ingredients = []
-    for role, identity in entries:
-        if not identity:
-            if role == "Bed":
-                raise ValueError("Choose a sound bed first.")
-            continue
-        item = asset(lookup, identity, {"audio"})
-        wav = folder / f"{role.lower()}-ingredient.wav"
-        # Decode to a new local file; the imported ingredient is never modified.
-        run([ffmpeg(), "-v", "error", "-y", "-i", str(item["path"]), "-t", "240", "-ac", "2", "-ar", "48000", "-c:a", "pcm_s16le", str(wav)])
-        if role == "Gesture":
-            with wave.open(str(wav), "rb") as source:
-                length = source.getnframes() / source.getframerate()
-            if length > duration - 1:
-                raise ValueError("Choose a shorter sound effect or a longer mix; the effect needs to fit between the first and last half-second.")
-        ingredients.append(Asset(identity, role, "2.009", wav))
-    progress("Mixing your sound layers")
-    profile = Profile("2.009", number(config.get("main_gain"), -6, -36, 0),
-                      number(config.get("accent_gain"), -12, -36, 0),
-                      number(config.get("music_gain"), -12, -36, 0), min(.5, duration / 4))
-    recipe = Recipe("social", profile.profile_id, duration, use_music_stem=bool(config.get("music")))
-    setup = Config(folder, "2.009-0.1", 48000, 2, 16, None, tuple(ingredients), {profile.profile_id: profile}, {recipe.recipe_id: recipe})
-    track = generate(setup, recipe.recipe_id, seed, folder / "soundtrack.wav")
-    with wave.open(str(track.path), "rb") as source:
-        samples = np.frombuffer(source.readframes(source.getnframes()), dtype="<i2")
-    if np.max(np.abs(samples.astype(np.int32))) >= 32767:
-        raise ValueError("The mix is too loud. Lower the sound-layer levels and try again.")
-    progress("Setting a consistent listening level")
-    target_lufs = number(config.get("target_lufs"), -18, -28, -14)
-    measurement = subprocess.run([ffmpeg(), "-hide_banner", "-stream_loop", "-1", "-i", str(track.path), "-t", str(max(4, duration)), "-af", "loudnorm=I=-18:TP=-1:LRA=11:print_format=json", "-f", "null", "-"], capture_output=True, text=True, timeout=60)
-    if measurement.returncode:
-        raise RuntimeError("The soundtrack level could not be measured.")
-    stats = json.loads(measurement.stderr[measurement.stderr.rfind("{"):measurement.stderr.rfind("}")+1])
-    measured = float(stats["input_i"])
-    peak = float(stats["input_tp"])
-    if not math.isfinite(measured) or not math.isfinite(peak):
-        raise ValueError("The mix is silent or too short to measure. Choose an audible sound bed.")
-    master_gain = min(target_lufs - measured, -1.0 - peak)
-    raw = folder / "mix-before-level.wav"
-    track.path.rename(raw)
-    run([ffmpeg(), "-v", "error", "-y", "-i", str(raw), "-af", f"volume={master_gain}dB", "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(track.path)])
-    details = asdict(track)
-    details["level"] = dict(target_lufs=target_lufs, estimated_output_lufs=measured + master_gain, applied_gain_db=master_gain, true_peak_ceiling_db=-1, method="constant gain; no compression")
-    details["path"] = track.path.name
-    (folder / "audio-recipe.json").write_text(json.dumps(details, indent=2) + "\n")
-    return track.path, "soundtrack"
+FONT = Path(__file__).parent / "web/brand-2026/Outfit-Bold.ttf"
 
-def crop_frame(image, size, progress, motion="still", focus_x=.5, focus_y=.5):
-    p = progress * progress * (3 - 2 * progress)
-    zoom = 1 + (.08 * p if motion == "push" else 0)
-    height = min(image.height, image.width * size[1] / size[0]) / zoom
-    width = height * size[0] / size[1]
-    if motion == "pan":
-        focus_x += .10 * (p - .5)
-    cx = width / 2 + (image.width - width) * max(0, min(1, focus_x))
-    cy = height / 2 + (image.height - height) * max(0, min(1, focus_y))
-    return image.transform(size, Image.Transform.EXTENT, (cx-width/2, cy-height/2, cx+width/2, cy+height/2), Image.Resampling.BICUBIC)
 
-def image_frames(path, size, frames, fit, motion, focus_x=.5, focus_y=.5):
-    image = image_rgb(path)
-    image.thumbnail((3840, 3840), Image.Resampling.LANCZOS)
-    if fit == "contain":
-        whole = ImageOps.contain(image, size, Image.Resampling.LANCZOS)
-        frame = Image.new("RGB", size, "black")
-        frame.paste(whole, ((size[0]-whole.width)//2, (size[1]-whole.height)//2))
-        for _ in range(frames):
-            yield frame
+def rhythm_times(audio_analysis, duration, minimum=0.75):
+    onsets = audio_analysis.get("onsets_seconds", [])
+    times = [0.0]
+    for t in onsets:
+        if t - times[-1] >= minimum and t < duration - minimum:
+            times.append(float(t))
+    if len(times) < 3:
+        return [round(float(t), 3) for t in np.arange(0, duration, 1.5)], "fallback 1.5-second grid"
+    return times, "measured audio onsets, spaced for readability"
+
+
+def render_audio(settings, sources, context, folder, size, progress):
+    by_role = {a["role"]: a for a in sources}
+    request = AudioRequest(
+        reference=by_role["reference"]["file"],
+        bed=by_role.get("bed", {}).get("file"),
+        effect=by_role.get("effect", {}).get("file"),
+        style=settings["style"],
+        duration=settings["duration"],
+        seed=settings["seed"],
+    )
+    progress(
+        "Interpreting your sound"
+        if settings["style"]["mode"] != "original"
+        else "Preserving your original recording"
+    )
+    result = LocalAudioProvider().generate(request, folder)
+    info = audio_features(result.output, settings["duration"])
+    info["process"] = result.metadata
+    return {"output": result.output, "preview": result.output}, info
+
+
+def prepare_photo(path, size):
+    return ImageOps.fit(media.image_rgb(path), size, Image.Resampling.LANCZOS)
+
+
+def video_frame(images, t, size, mode, transitions):
+    width, height = size
+    index = max(0, bisect_right(transitions, t) - 1)
+    current = images[index % len(images)]
+    next_image = images[(index + 1) % len(images)]
+    local = t - transitions[index]
+    phase = 0.5 + 0.5 * math.sin(t * 2.1)
+    if mode == "liquid":
+        # Strip deformation adapted conceptually from the Rubber Reality experiment.
+        zoomed = ImageOps.fit(current, (round(width * 1.24), round(height * 1.1)), Image.Resampling.BICUBIC)
+        frame = Image.new("RGB", size)
+        strips = 36
+        for i in range(strips):
+            top, bottom = round(i * height / strips), round((i + 1) * height / strips)
+            offset = int(width * (0.12 + 0.085 * math.sin(i / strips * math.tau * 1.4 + t * 2)))
+            piece = zoomed.crop(
+                (offset, top + round(height * 0.05), offset + width, bottom + round(height * 0.05))
+            )
+            frame.paste(piece, (0, top))
+        if local < 0.35 and index:
+            frame = Image.blend(images[(index - 1) % len(images)], frame, local / 0.35)
+    elif mode == "mirror":
+        tile_size = (width // 2, height // 2)
+        small = ImageOps.fit(current, tile_size, Image.Resampling.BICUBIC)
+        other = ImageOps.fit(next_image, tile_size, Image.Resampling.BICUBIC)
+        frame = Image.new("RGB", size)
+        for x, y, tile in (
+            (0, 0, small),
+            (width // 2, 0, ImageOps.mirror(other)),
+            (0, height // 2, ImageOps.flip(other)),
+            (width // 2, height // 2, ImageOps.mirror(ImageOps.flip(small))),
+        ):
+            frame.paste(tile, (x, y))
+        inset = round(min(size) * (0.03 + 0.04 * phase))
+        frame = ImageOps.fit(
+            frame.crop((inset, inset, width - inset, height - inset)), size, Image.Resampling.BICUBIC
+        )
+    elif mode == "cut":
+        zoom = 1.15 + 0.55 * min(1, local * 1.3)
+        cw, ch = int(width / zoom), int(height / zoom)
+        left = int((width - cw) * (0.2 if index % 2 else 0.8))
+        top = int((height - ch) * 0.4)
+        frame = current.crop((left, top, left + cw, top + ch)).resize(size, Image.Resampling.BICUBIC)
+        if index % 2:
+            frame = ImageOps.posterize(frame, 4)
+        draw = ImageDraw.Draw(frame)
+        border = max(2, round(min(size) * 0.025))
+        draw.rectangle(
+            (0, 0, width - 1, height - 1), outline="#d7ed62" if index % 2 else "#bc91ff", width=border
+        )
     else:
-        for frame in range(frames):
-            yield crop_frame(image, size, frame / max(1, frames-1), motion, focus_x, focus_y)
+        raise ValueError(f"Unknown video style mode: {mode}")
+    return frame
 
-def clip_frames(path, size, frames, start, fit, folder):
-    mode = "decrease" if fit == "contain" else "increase"
-    vf = f"fps={FPS},scale={size[0]}:{size[1]}:force_original_aspect_ratio={mode},"
-    vf += f"pad={size[0]}:{size[1]}:(ow-iw)/2:(oh-ih)/2:black" if fit == "contain" else f"crop={size[0]}:{size[1]}"
-    args = [ffmpeg(), "-v", "error", "-ss", str(start), "-i", str(path), "-vf", vf + ",setsar=1", "-an", "-frames:v", str(frames), "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"]
-    with (folder / "clip-decode.log").open("wb") as log:
-        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=log)
-        try:
-            for _ in range(frames):
-                count = size[0] * size[1] * 3
-                data = process.stdout.read(count)
-                if len(data) != count:
-                    raise ValueError("The video clip is too short for the selected start and duration.")
-                yield Image.frombytes("RGB", size, data)
-            if process.wait():
-                raise RuntimeError("This video clip could not be decoded.")
-        finally:
-            if process.poll() is None:
-                process.kill()
-                process.wait()
-            process.stdout.close()
 
-def source_frames(item, size, frames, folder, fit="cover", motion="still", start=0, fx=.5, fy=.5):
-    if item["kind"] == "image":
-        return image_frames(item["path"], size, frames, fit, motion, fx, fy)
-    if start + frames / FPS > item["duration"] + .05:
-        raise ValueError(f"{item['name']} is shorter than the requested section.")
-    return clip_frames(item["path"], size, frames, start, fit, folder)
+def render_video(settings, sources, context, folder, size, progress):
+    images = [prepare_photo(a["file"], size) for a in sources]
+    duration = settings["duration"]
+    transitions, method = rhythm_times(context["audio"]["analysis"], duration)
+    output = folder / "video.mp4"
+    sampled = []
+    with media.frame_writer(output, size) as write:
+        for n in range(round(duration * media.FPS)):
+            if n % media.FPS == 0:
+                progress(f"Rendering picture {n // media.FPS + 1} / {int(duration)} seconds")
+            frame = video_frame(images, n / media.FPS, size, settings["style"]["mode"], transitions)
+            if n % (3 * media.FPS) == 0:
+                sampled.append(image_features(frame))
+            write(frame)
+    overview = sampled[len(sampled) // 2]
+    return {"output": output, "preview": output}, {
+        **overview,
+        "sampled_frames": sampled,
+        "transition_points": transitions,
+        "timing_method": method,
+        "motion": settings["style"]["mode"],
+        "motion_source": "preset-declared, not measured optical flow",
+        "contrast_affinity_intent": settings["style"]["description"],
+    }
 
-def video(config, lookup, folder, progress):
-    sequence = config.get("sequence", [])
-    if not isinstance(sequence, list) or not 1 <= len(sequence) <= 150:
-        raise ValueError("Add between 1 and 150 photographs or clips to the sequence.")
-    size = size_for(config)
-    fit = config.get("fit", "cover")
-    motion = config.get("motion", "push")
-    if fit not in {"cover", "contain"} or motion not in {"still", "push", "pan"}:
-        raise ValueError("Choose one of the available framing and motion options.")
-    prepared = []
-    for entry in sequence:
-        item = asset(lookup, entry["id"], {"image", "video"})
-        frames = round(number(entry.get("duration"), 1.4, .2, 120) * FPS)
-        start = number(entry.get("start"), 0, 0, 7200)
-        fx = number(entry.get("focus_x"), .5, 0, 1)
-        fy = number(entry.get("focus_y"), .5, 0, 1)
-        if item["kind"] == "video" and start + frames / FPS > item["duration"] + .05:
-            raise ValueError(f"{item['name']} is shorter than the requested section.")
-        prepared.append((item, frames, start, fx, fy))
-    if sum(p[1] for p in prepared) > 600 * FPS:
-        raise ValueError("Keep a single export under ten minutes.")
-    dissolve = round(number(config.get("dissolve"), .08, 0, 1) * FPS)
-    target = folder / "silent-video.mp4"
-    writer = FrameWriter(target, size)
-    previous = None
-    try:
-        for index, (item, frames, start, fx, fy) in enumerate(prepared):
-            progress(f"Rendering {index+1} of {len(prepared)}: {item['name']}")
-            fading = min(dissolve, frames // 2)
-            final = None
-            for n, frame in enumerate(source_frames(item, size, frames, folder, fit, motion, start, fx, fy)):
-                if previous is not None and n < fading:
-                    frame = Image.blend(previous, frame, (n+1)/fading)
-                writer.write(frame)
-                final = frame
-            previous = final
-        writer.close()
-    except BaseException:
-        writer.abort()
-        raise
-    return target, "silent-video"
 
-def font_path():
-    candidates = [str(Path(__file__).parent / "web/brand-2026/Outfit-Bold.ttf"), "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Helvetica.ttc",
-                  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]
-    for path in candidates:
-        if Path(path).is_file():
-            return path
-    raise RuntimeError("Install Arial or DejaVu Sans Bold to export animated text.")
-
-def text_layout(text, size):
+@lru_cache(maxsize=32)
+def word_tile(word, width, mode):
     measure = ImageDraw.Draw(Image.new("RGB", (1, 1)))
-    for point_size in range(round(size[0] * .115), max(12, round(size[0] * .035)), -2):
-        font = ImageFont.truetype(font_path(), point_size)
-        lines = []
-        for paragraph in text.splitlines() or [text]:
-            current = ""
-            # Word wrapping with character fallback for exceptionally long words.
-            for word in paragraph.split(" "):
-                candidate = (current + " " + word).strip()
-                if current and measure.textlength(candidate, font=font) > size[0] * .80:
-                    lines.append(current)
-                    current = word
-                else:
-                    current = candidate
-                while current and measure.textlength(current, font=font) > size[0] * .80:
-                    take = len(current)-1
-                    while measure.textlength(current[:take], font=font) > size[0] * .80:
-                        take -= 1
-                    lines.append(current[:take])
-                    current = current[take:]
-            lines.append(current)
-        if len(lines) * point_size * 1.25 <= size[1] * .60:
-            return font, lines, point_size * 1.25
-    raise ValueError("Shorten the text so it stays readable in this format.")
+    font_size = int(width * 0.23)
+    while font_size > 8:
+        font = ImageFont.truetype(str(FONT), font_size)
+        if measure.textbbox((0, 0), word, font=font)[2] <= width * 0.74:
+            break
+        font_size -= 2
+    bbox = measure.textbbox((0, 0), word, font=font, stroke_width=max(1, font_size // 32))
+    margin = max(8, round(width * 0.04))
+    tile = Image.new("RGBA", (bbox[2] - bbox[0] + margin * 2, bbox[3] - bbox[1] + margin * 2))
+    draw = ImageDraw.Draw(tile)
+    draw.text(
+        (margin - bbox[0], margin - bbox[1]),
+        word,
+        font=font,
+        fill="#ffffff",
+        stroke_width=max(1, font_size // 32),
+        stroke_fill="#171d22",
+    )
+    return tile
 
-def text_layer(text, size, elapsed, hold, style="rise", position="center", color="#ffffff", plate=False):
+
+def text_frame(word, size, t, mode, band="center", entry=0.4):
     layer = Image.new("RGBA", size, (0, 0, 0, 0))
-    if elapsed < 0 or elapsed >= hold:
+    local = t - entry
+    if local < 0:
         return layer
-    font, lines, spacing = text_layout(text, size)
-    ease = min(1., elapsed / min(.6, hold / 3))
-    ease = 1 - (1 - ease) ** 3
-    opacity = ease if style in {"fade", "rise"} else 1
-    opacity *= min(1., (hold - elapsed) / min(.3, hold / 4))
-    words_visible = max(0, math.ceil(len(text.split()) * min(1., elapsed / min(2., hold * .6))))
-    chars_visible = math.ceil(len(text) * min(1., elapsed / min(2., hold * .6)))
-    total_height = len(lines) * spacing
-    y = {"top": size[1] * .12, "center": (size[1]-total_height)/2, "bottom": size[1]*.79-total_height}[position]
-    if style == "rise":
-        y += size[1] * .03 * (1 - ease)
-    draw = ImageDraw.Draw(layer)
-    if plate:
-        draw.rounded_rectangle((size[0]*.065, y-size[0]*.045, size[0]*.935, y+total_height+size[0]*.025), radius=size[0]*.025, fill=(0, 0, 0, int(175*opacity)))
-    rgb = ImageColor.getrgb(color)
-    for line in lines:
-        visible = line
-        if style == "words":
-            words = line.split()
-            visible = " ".join(words[:words_visible])
-            words_visible = max(0, words_visible-len(words))
-        if style == "type":
-            visible = line[:chars_visible]
-            chars_visible = max(0, chars_visible-len(line)-1)
-        x = (size[0]-draw.textlength(line, font=font))/2
-        draw.text((x, y), visible, font=font, anchor="lt", fill=rgb+(round(255*opacity),), stroke_width=max(1, round(size[0]/540)), stroke_fill=(0,0,0,round(100*opacity)))
-        y += spacing
+    tile = word_tile(word, size[0], mode)
+    ease = min(1, local / 0.7)
+    y_fraction = {"top": 0.25, "center": 0.5, "bottom": 0.7}[band]
+    if mode == "inflate":
+        scale = 0.15 + 0.85 * min(1.15, 1 - math.exp(-local * 7) * math.cos(local * 11))
+        scale *= 1 + 0.04 * math.sin(local * 3)
+        tile = tile.resize(
+            (max(1, round(tile.width * scale)), max(1, round(tile.height * scale))), Image.Resampling.BICUBIC
+        )
+    x = round((size[0] - tile.width) / 2)
+    y = round(size[1] * y_fraction - tile.height / 2)
+    if mode == "slide":
+        x += round(size[0] * (1 - ease) ** 3)
+        x += round(size[0] * 0.04 * math.sin(max(0, local - 1) * 1.5))
+    elif mode == "echo":
+        for i, color in ((3, "#bc91ff"), (2, "#ff9f70"), (1, "#d7ed62")):
+            echo_tile = Image.new("RGBA", tile.size, color)
+            echo_tile.putalpha(tile.getchannel("A"))
+            offset = round(i * size[0] * 0.023 * (0.8 + 0.3 * math.sin(local * 2)))
+            layer.alpha_composite(echo_tile, (x + offset, y + offset))
+    elif mode != "inflate":
+        raise ValueError(f"Unknown text style mode: {mode}")
+    layer.alpha_composite(tile, (x, y))
     return layer
 
-def text(config, lookup, folder, progress):
-    content = str(config.get("text", "")).strip()
-    if not content or len(content) > 300:
-        raise ValueError("Enter between 1 and 300 characters of text.")
-    size = size_for(config)
-    duration = number(config.get("duration"), 5, 1, 180)
-    start = number(config.get("start"), 0, 0, duration)
-    hold = number(config.get("hold"), duration-start, .2, duration-start)
-    style = config.get("style", "rise")
-    position = config.get("position", "center")
-    if style not in {"rise", "fade", "words", "type"} or position not in {"top", "center", "bottom"}:
-        raise ValueError("Choose an available animation and text position.")
-    color = config.get("color", "#ffffff")
-    background = config.get("background", "#111111")
-    ImageColor.getrgb(color)
-    ImageColor.getrgb(background)
-    text_layout(content, size)
-    alpha = bool(config.get("transparent"))
-    item = asset(lookup, config["base"], {"image", "video"}) if config.get("base") and not alpha else None
-    frames = round(duration * FPS)
-    images = source_frames(item, size, frames, folder) if item else None
-    target = folder / ("animated-text-overlay.mov" if alpha else "animated-text.mp4")
-    writer = FrameWriter(target, size, alpha)
-    try:
-        for n in range(frames):
-            if n % FPS == 0:
-                progress(f"Animating text: {n // FPS + 1} of {math.ceil(duration)} seconds")
-            layer = text_layer(content, size, n/FPS-start, hold, style, position, color, bool(config.get("plate")))
-            if alpha:
-                frame = layer
-            else:
-                base = next(images).convert("RGBA") if images else Image.new("RGBA", size, background)
-                frame = Image.alpha_composite(base, layer).convert("RGB")
-            writer.write(frame)
-        writer.close()
-    except BaseException:
-        writer.abort()
-        raise
-    if item and item.get("has_audio"):
-        progress("Preserving the video's existing sound")
-        complete = folder / "animated-text-with-sound.mp4"
-        run([ffmpeg(), "-v", "error", "-y", "-i", str(target), "-i", str(item["path"]), "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", str(frames/FPS), "-movflags", "+faststart", str(complete)])
-        target = complete
-    if alpha:
-        preview = folder / "overlay-preview.mp4"
-        run([ffmpeg(), "-v", "error", "-y", "-f", "lavfi", "-i", f"color=c=0x202020:s={size[0]}x{size[1]}:r={FPS}:d={duration}", "-i", str(target), "-filter_complex", "[0:v][1:v]overlay=shortest=1", *encode_args(), str(preview)])
-    return target, "text-overlay" if alpha else "text-video"
 
-def assemble(config, lookup, folder, progress):
-    visual = asset(lookup, config.get("video"), {"video"})
-    sound = asset(lookup, config["audio"], {"audio"}) if config.get("audio") else None
-    overlay = asset(lookup, config["overlay"], {"video"}) if config.get("overlay") else None
-    if overlay and overlay.get("role") != "text-overlay":
-        raise ValueError("Choose a transparent title overlay exported by the text animator.")
-    duration = visual["duration"]
-    if not sound and not visual.get("has_audio"):
-        raise ValueError("Choose an audio track to add to this silent video.")
-    if sound and sound["duration"] + .05 < duration and not config.get("loop_audio"):
-        raise ValueError("The audio is shorter than the video. Enable Loop audio or choose a longer track.")
-    if overlay and (overlay["width"], overlay["height"]) != (visual["width"], visual["height"]):
-        raise ValueError("Export the text overlay in the same format as your video.")
-    progress("Combining your selected video, sound, and titles")
-    args = [ffmpeg(), "-v", "error", "-y", "-i", str(visual["path"])]
-    sound_index = 0
-    if sound:
-        if config.get("loop_audio"):
-            args += ["-stream_loop", "-1"]
-        args += ["-i", str(sound["path"])]
-        sound_index = 1
-    if overlay:
-        args += ["-i", str(overlay["path"])]
-        oi = 2 if sound else 1
-        args += ["-filter_complex", f"[0:v][{oi}:v]overlay=eof_action=pass:repeatlast=0,format=yuv420p,setparams=range=limited:color_primaries=bt709:color_trc=bt709:colorspace=bt709[v]", "-map", "[v]", "-c:v", "libx264", "-crf", "19", "-preset", "fast", "-pix_fmt", "yuv420p", "-threads", "4", "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-color_range", "tv"]
-    else:
-        # Keep the approved video bit-for-bit when no overlay is being added.
-        args += ["-map", "0:v:0", "-c:v", "copy"]
-    gain = number(config.get("gain"), 0, -36, 6)
-    fade = number(config.get("fade"), .25, 0, min(3, duration/2))
-    args += ["-map", f"{sound_index}:a:0", "-af", f"volume={gain}dB,afade=t=in:d={fade},afade=t=out:st={max(0,duration-fade)}:d={fade}", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-t", str(duration), "-movflags", "+faststart"]
-    target = folder / "2.009-social-post.mp4"
-    run(args + [str(target)])
-    return target, "final-video"
+def render_text(settings, sources, context, folder, size, progress):
+    duration = settings["duration"]
+    output, preview = folder / "text-alpha.mov", folder / "text-preview.mp4"
+    video_info = context["video"]["analysis"]
+    band = video_info.get("quiet_band", "center")
+    transitions = video_info.get("transition_points", [0, 1.5])
+    entry = next((float(t) for t in transitions if t > 0.2), 0.4)
+    entry = min(entry, 2.5)
+    with media.frame_writer(output, size, alpha=True) as write:
+        for n in range(round(duration * media.FPS)):
+            if n % media.FPS == 0:
+                progress(f"Drawing Keyword {n // media.FPS + 1} / {int(duration)} seconds")
+            write(
+                text_frame(settings["keyword"], size, n / media.FPS, settings["style"]["mode"], band, entry)
+            )
+    media.ff(
+        [
+            "-f",
+            "lavfi",
+            "-i",
+            f"color=c=0x343b40:s={size[0]}x{size[1]}:r={media.FPS}:d={duration}",
+            "-i",
+            output,
+            "-filter_complex",
+            "[0:v][1:v]overlay=shortest=1:format=auto,format=yuv420p[v]",
+            "-map",
+            "[v]",
+            "-t",
+            duration,
+            *media.video_args(),
+            preview,
+        ]
+    )
+    return {"output": output, "preview": preview}, {
+        "alpha": True,
+        "placement": band,
+        "entry_seconds": entry,
+        "placement_method": "low-variation image band heuristic; no subject detection",
+        "timing_method": "selected video transition",
+        "keyword": settings["keyword"],
+        "motion": settings["style"]["mode"],
+    }
 
-RENDERERS = {"audio": audio, "video": video, "text": text, "assemble": assemble}
+
+def render_assembly(settings, sources, context, folder, size, progress):
+    audio, video, text = (context[k] for k in ("audio", "video", "text"))
+    duration, mode = settings["duration"], settings["style"]["mode"]
+    # All variants use the exact selected audio, video, and alpha text files.
+    delay, scale, shift, fade = {
+        "affinity": (0, 1.0, 0, 0.1),
+        "contrast": (1.2, 0.72, -0.16, 0.1),
+        "build": (3.5, 0.9, 0.07, 3.5),
+    }[mode]
+    picture = "[0:v]setpts=PTS-STARTPTS"
+    if mode == "contrast":
+        picture += f",crop=iw*.84:ih*.84,scale={size[0]}:{size[1]}"
+    picture += "[picture]"
+    tw, th = max(2, int(size[0] * scale) // 2 * 2), max(2, int(size[1] * scale) // 2 * 2)
+    graph = (
+        f"{picture};[1:v]scale={tw}:{th},setpts=PTS-STARTPTS+{delay}/TB[type];"
+        f"[picture][type]overlay=x=(W-w)/2:y=(H-h)/2+H*{shift}:eof_action=pass:format=auto,"
+        f"format=yuv420p[v];[2:a]afade=t=in:d={fade},afade=t=out:st={duration - 0.25}:d=0.25[a]"
+    )
+    output = folder / "final.mp4"
+    progress("Combining your selected ingredients")
+    media.ff(
+        [
+            "-i",
+            video["file"],
+            "-i",
+            text["file"],
+            "-i",
+            audio["file"],
+            "-filter_complex_threads",
+            "2",
+            "-filter_complex",
+            graph,
+            "-map",
+            "[v]",
+            "-map",
+            "[a]",
+            "-t",
+            duration,
+            *media.video_args(),
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-ar",
+            48000,
+            "-ac",
+            2,
+            output,
+        ]
+    )
+    return {"output": output, "preview": output}, {
+        "ingredients": {k: c["id"] for k, c in context.items()},
+        "selection_policy": "explicit human selections are authoritative",
+        "editorial_mode": mode,
+        "text_delay_seconds": delay,
+        "text_scale": scale,
+        "text_vertical_shift": shift,
+        "audio_fade_in_seconds": fade,
+        "contrast_affinity_intent": settings["style"]["description"],
+        "earlier_analysis": {k: c["analysis"] for k, c in context.items()},
+    }
+
+
+RENDERERS = {"audio": render_audio, "video": render_video, "text": render_text, "assembly": render_assembly}

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "audio": [
+    {"id":"tape-orbit","name":"Tape orbit","family":"echo","mode":"echo","bpm":88,"color":"#bc91ff","description":"Warm repeated fragments orbit a slow pulse.","prompt":"warm analog tape echoes, dub bass, spacious instrumental, playful"},
+    {"id":"pocket-machine","name":"Pocket machine","family":"rhythm","mode":"chop","bpm":126,"color":"#d7ed62","description":"Your recording becomes a punchy, syncopated instrument.","prompt":"crisp syncopated found-sound percussion, garage groove, instrumental"},
+    {"id":"moon-pool","name":"Moon pool","family":"atmosphere","mode":"reverse","bpm":64,"color":"#93cee7","description":"Backward swells and long, floating harmonies.","prompt":"dreamy reverse swells, ambient cinematic underwater textures, instrumental"},
+    {"id":"tiny-circuit","name":"Tiny circuit","family":"electronic","mode":"ring","bpm":142,"color":"#ff9f70","description":"Metallic modulation and fast toy-like percussion.","prompt":"quirky modular synth, metallic arpeggios, fast playful instrumental"},
+    {"id":"paper-radio","name":"Paper radio","family":"lofi","mode":"radio","bpm":102,"color":"#e0b48a","description":"Narrow-band radio texture with an offbeat shuffle.","prompt":"lo-fi radio, dusty breakbeat, handmade percussion, instrumental"},
+    {"id":"elastic-band","name":"Elastic band","family":"pitch","mode":"elastic","bpm":112,"color":"#f89dc8","description":"Rubbery pitch bends and springy call-and-response.","prompt":"elastic synth bass, springy plucked strings, playful groove, instrumental"},
+    {"id":"bright-sparks","name":"Bright sparks","family":"rhythm","mode":"spark","bpm":134,"color":"#ffc94a","description":"Short bright shards jump around a driving pulse.","prompt":"bright staccato mallets, clattering percussion, energetic instrumental"},
+    {"id":"slow-magnet","name":"Slow magnet","family":"atmosphere","mode":"drone","bpm":72,"color":"#a8ccb0","description":"Stretched low tones with sparse, heavy punctuation.","prompt":"slow deep drone, sparse resonant percussion, cinematic instrumental"},
+    {"id":"wire-garden","name":"Wire garden","family":"electronic","mode":"tremolo","bpm":118,"color":"#b3c5ef","description":"Pulsing tremolo, stereo motion, and a clean rising bed.","prompt":"shimmering tremolo, electronic garden, rising clean synths, instrumental"}
+  ],
+  "video": [
+    {"id":"liquid-room","name":"Liquid room","family":"distortion","mode":"liquid","color":"#bc91ff","description":"Photographs bend and flow through an elastic space."},
+    {"id":"mirror-party","name":"Mirror party","family":"repetition","mode":"mirror","color":"#d7ed62","description":"Mirrored tiles, repeated people, and rhythmic collisions."},
+    {"id":"cut-and-shout","name":"Cut & shout","family":"cutting","mode":"cut","color":"#ff9f70","description":"Oversized crops and bold graphic interruptions."}
+  ],
+  "text": [
+    {"id":"inflate","name":"Inflate","family":"scale","mode":"inflate","color":"#d7ed62","description":"A single word expands, overshoots, and finds its place."},
+    {"id":"echo-type","name":"Echo type","family":"repetition","mode":"echo","color":"#bc91ff","description":"Colored type echoes stack behind the word."},
+    {"id":"slide-cut","name":"Slide cut","family":"movement","mode":"slide","color":"#ff9f70","description":"A sharp sideways entrance with a rhythmic return."}
+  ],
+  "assembly": [
+    {"id":"in-step","name":"In step","family":"affinity","mode":"affinity","color":"#d7ed62","description":"Shared rhythm. An early title lands with the sound."},
+    {"id":"against-grain","name":"Against the grain","family":"contrast","mode":"contrast","color":"#bc91ff","description":"A tighter crop and a delayed, opposing title entrance."},
+    {"id":"build-release","name":"Build & release","family":"arc","mode":"build","color":"#ff9f70","description":"Sound builds first. The word arrives as the edit opens up."}
+  ]
+}

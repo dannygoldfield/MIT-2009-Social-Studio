@@ -1,4 +1,4 @@
-# MIT 2.009 Test Studio
+# MIT 2.009 Candidate Studio
 
 This is a separate production project owned by Danny Goldfield.
 
@@ -9,3 +9,5 @@ This is a separate production project owned by Danny Goldfield.
 - Preserve originals and use a new output directory for each render.
 - Make downloadable audio and video files; leave creative approval and posting to Danny.
 - Test exported media and isolation boundaries after meaningful rendering changes.
+
+- Keep the four-stage candidate loop simple. Update docs/CONTENT-PIPELINE.md when a product rule or limitation changes. Follow docs/TESTING.md for verification.

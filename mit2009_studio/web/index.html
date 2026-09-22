@@ -1,87 +1,68 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#F4F4F4"><title>Connect · 2.009 Test Studio · 2026</title><link rel="icon" href="/brand-2026/slack_icons-07.png"><link rel="preload" href="/brand-2026/Outfit-Variable.ttf" as="font" type="font/ttf" crossorigin><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
-<body data-tool="video">
-<a class="skip-link" href="#main">Skip to the studio</a>
-<svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
-<symbol id="icon-video" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></symbol>
-<symbol id="icon-audio" viewBox="0 0 24 24"><path d="M4 10v4m4-7v10m4-13v16m4-13v10m4-7v4"/></symbol>
-<symbol id="icon-text" viewBox="0 0 24 24"><path d="M4 7V4h16v3M12 4v16M8 20h8"/></symbol>
-<symbol id="icon-assemble" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></symbol>
-<symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
-<symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-</defs></svg>
-<header class="topbar">
-<a class="brand" href="/" aria-label="Connect 2.009 Test Studio, 2026"><span class="connect-logo"><img src="/brand-2026/logo-01.png" alt="2.009 Connect" width="2100" height="1275"></span><span class="brand-name">Test Studio<small>MIT 2.009 <span>·</span> 2026</small></span></a>
-<div class="header-actions"><button class="brand-kit-button" id="open-brand"><span class="color-dots" aria-hidden="true"><i></i><i></i><i></i></span>2026 brand kit</button><span class="local"><i></i> On this Mac</span></div>
-</header>
-<div class="shell">
-<aside class="library"><div class="section-heading"><h2>Media library</h2><span id="media-count">0 files</span></div><p class="muted">Your photographs, edited clips, and sound ingredients.</p>
-<input type="file" multiple id="file-input" accept="image/*,video/*,audio/*" hidden><button class="drop" id="drop-zone"><span class="plus"><svg class="icon" aria-hidden="true"><use href="#icon-plus"/></svg></span><strong>Add media</strong><span>Choose files or drop them here</span></button>
-<button class="folder-label" id="import-folder">Or import a folder <span aria-hidden="true">↗</span></button><input id="folder-input" type="file" webkitdirectory multiple hidden>
-<p id="import-status" role="status" class="muted"></p><label class="media-search"><svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg><input id="media-search" type="search" placeholder="Find your media" aria-label="Search media"></label><div class="filters" aria-label="Filter media"><button class="active" data-filter="all">All</button><button data-filter="image">Photos</button><button data-filter="video">Video</button><button data-filter="audio">Audio</button></div><div id="media-list"></div><div class="library-footer"><span class="mini-ribbon" aria-hidden="true"></span><span>A place for every possibility.</span></div>
-</aside>
-<main id="main">
-<nav class="tools" aria-label="Studio tools"><button data-tool="video" class="active" aria-pressed="true"><span class="tool-icon"><svg class="icon" aria-hidden="true"><use href="#icon-video"/></svg></span>Video</button><button data-tool="audio" aria-pressed="false"><span class="tool-icon"><svg class="icon" aria-hidden="true"><use href="#icon-audio"/></svg></span>Audio</button><button data-tool="text" aria-pressed="false"><span class="tool-icon"><svg class="icon" aria-hidden="true"><use href="#icon-text"/></svg></span>Text animator</button><button data-tool="assemble" aria-pressed="false"><span class="tool-icon"><svg class="icon" aria-hidden="true"><use href="#icon-assemble"/></svg></span>Assemble</button></nav>
-<div class="page-heading"><span class="season-tag">CONNECT <span>2026</span></span><p class="eyebrow" id="eyebrow">PHOTO & VIDEO GENERATOR</p><h1 id="page-title">Make the work move.</h1><p id="page-description">Arrange photographs and edited clips into a silent video. Add sound when you’re ready.</p></div>
-<div class="editor">
-<div class="settings">
-<section class="tool-panel" id="panel-video">
-<div class="two-col"><label>Format<select id="video-format"><option value="vertical">Vertical · 9:16</option><option value="square">Square · 1:1</option><option value="landscape">Wide · 16:9</option></select></label><label>Framing<select id="video-fit"><option value="cover">Fill the frame</option><option value="contain">Show the whole image</option></select></label></div>
-<div class="two-col"><label>Photo motion<select id="video-motion"><option value="push">Slow push in</option><option value="pan">Gentle pan</option><option value="still">Still</option></select></label><label>Dissolve<select id="video-dissolve"><option value="0.08">Almost a cut · 0.08 sec</option><option value="0">No dissolve</option><option value="0.2">Short · 0.2 sec</option><option value="0.4">Soft · 0.4 sec</option></select></label></div>
-<div class="sequence-heading"><h2>Your sequence <span id="sequence-count">0</span></h2><div><input aria-label="Default seconds per item" id="default-duration" type="number" min="0.2" max="120" step="0.1" value="1.4"><span>sec</span><button class="text-button" id="apply-duration">Apply to all</button></div></div>
-<p class="muted small">Add media from the library. Drag to reorder, or use the arrow buttons. Clips export without sound.</p><div id="sequence"></div>
-</section>
-<section class="tool-panel" id="panel-audio" hidden>
-<div class="audio-workflow" role="group" aria-label="Audio workflow"><button data-audio-view="audition" class="active" aria-pressed="true">1. Listen & choose</button><button data-audio-view="mix" aria-pressed="false">2. Make a mix</button></div>
-<div id="audio-audition">
-<div class="audio-buckets" role="group" aria-label="Audio buckets">
-<button data-audio-bucket="bed"><span class="bucket-mark">≋</span><strong>Sound beds</strong><small>A continuous foundation</small><span class="bucket-count" id="bucket-count-bed"></span></button>
-<button data-audio-bucket="effect" class="active"><span class="bucket-mark">✳</span><strong>Sound Effects</strong><small>Pops of personality</small><span class="bucket-count" id="bucket-count-effect"></span></button>
-<button data-audio-bucket="wildcard"><span class="bucket-mark">✦</span><strong>Wildcards</strong><small>Music and unexpected layers</small><span class="bucket-count" id="bucket-count-wildcard"></span></button>
-</div>
-<div class="audio-import-bar"><button id="add-bucket-audio">＋ Add audio to this bucket</button><button id="add-bucket-folder">Import a folder ↗</button></div>
-<div class="audition-toolbar"><label class="check"><input type="checkbox" id="audition-shortlist" checked> New Adobe shortlist</label><label class="audition-search"><input id="audition-search" type="search" placeholder="Find a sound" aria-label="Search audio bucket"></label></div>
-<p class="audition-intro" id="audition-intro">A playful first pass. Listen, make a note, and decide what belongs.</p><p id="audition-status" role="status"></p>
-<div id="audition-list" class="audition-list"></div>
-</div>
-<div id="audio-mix" hidden>
-<p class="muted small">Choose one sound from each bucket. Sound Effects and Wildcards are optional. Files marked Pass stay out of these menus.</p>
-<div class="mix-layer"><span class="mix-number">01</span><div><label>Sound bed<select id="audio-main" data-library="audio"><option value="">Choose a sound bed</option></select></label><audio id="listen-main" controls preload="none" hidden aria-label="Preview sound bed"></audio><label>Sound bed level <span class="range-value" data-for="audio-main-gain">−6 dB</span><input id="audio-main-gain" type="range" min="-36" max="0" value="-6"></label></div></div>
-<div class="mix-layer"><span class="mix-number">02</span><div><label>Sound effect <span class="optional">optional</span><select id="audio-accent" data-library="audio"><option value="">None</option></select></label><audio id="listen-accent" controls preload="none" hidden aria-label="Preview sound effect"></audio><label>Sound effect level <span class="range-value" data-for="audio-accent-gain">−12 dB</span><input id="audio-accent-gain" type="range" min="-36" max="0" value="-12"></label></div></div>
-<div class="mix-layer"><span class="mix-number">03</span><div><label>Wildcard <span class="optional">optional</span><select id="audio-music" data-library="audio"><option value="">None</option></select></label><audio id="listen-music" controls preload="none" hidden aria-label="Preview wildcard"></audio><label>Wildcard level <span class="range-value" data-for="audio-music-gain">−12 dB</span><input id="audio-music-gain" type="range" min="-36" max="0" value="-12"></label></div></div>
-<div class="two-col"><label>Duration · seconds<input type="number" id="audio-duration" min="2" max="180" step="0.1" value="11"></label><label>Variation<input type="number" id="audio-seed" min="0" max="2147483647" value="2009"></label></div><label>Listening level<select id="audio-level"><option value="-18">Present</option><option value="-22">Gentle</option><option value="-16">Strong</option></select></label><p class="muted small">Sets a consistent output level while preserving your layer balance. Sound beds and Wildcards loop; a sound effect plays once within the mix.</p><p class="muted small">Change Variation to try a different section and effect timing. Your original files stay intact.</p>
-</div>
-</section>
-<section class="tool-panel" id="panel-text" hidden>
-<div class="type-label"><span class="type-mark">Aa</span><span><strong>Outfit</strong><small>The 2.009 2026 typeface</small></span><span class="type-weight">Bold</span></div>
-<label>Your text<textarea id="text-content" maxlength="300" rows="4" placeholder="What are we building next?">IDEAS INTO\nREALITY.</textarea></label>
-<div class="two-col"><label>Animation<select id="text-style"><option value="rise">Rise & settle</option><option value="fade">Soft reveal</option><option value="words">Word by word</option><option value="type">Typewriter</option></select></label><label>Position<select id="text-position"><option value="center">Center</option><option value="top">Top</option><option value="bottom">Lower caption</option></select></label></div>
-<div class="two-col"><label>Format<select id="text-format"><option value="vertical">Vertical · 9:16</option><option value="square">Square · 1:1</option><option value="landscape">Wide · 16:9</option></select></label><label>Text color<input id="text-color" type="color" value="#ffffff"></label></div>
-<div class="brand-color-group"><span>Text palette</span><div id="text-swatches" class="swatches" role="group" aria-label="2026 text colors"></div></div>
-<label>Photo or video behind the text <span class="optional">optional</span><select id="text-base" data-library="visual"><option value="">Solid background</option></select></label>
-<div class="two-col"><label>Background color<input type="color" id="text-background" value="#005c92"></label><label class="check"><input type="checkbox" id="text-plate"> Add a dark text backing</label></div>
-<div class="brand-color-group"><span>Background palette</span><div id="background-swatches" class="swatches" role="group" aria-label="2026 background colors"></div></div>
-<div class="three-col"><label>Video length<input type="number" id="text-duration" value="5" min="1" max="180" step="0.1"></label><label>Text starts<input type="number" id="text-start" value="0" min="0" step="0.1"></label><label>Text lasts<input type="number" id="text-hold" value="5" min="0.2" max="180" step="0.1"></label></div>
-<p class="muted small">All times are in seconds. Text over a video preserves its sound.</p><label class="check overlay-check"><input type="checkbox" id="text-transparent"> Export a transparent overlay for the assembler</label><p class="muted small">Transparent overlays download as MOV files. Other text videos download as MP4.</p>
-</section>
-<section class="tool-panel" id="panel-assemble" hidden>
-<label>Your video<select id="assemble-video" data-library="video"><option value="">Choose a video</option></select></label><label>Soundtrack<select id="assemble-audio" data-library="audio"><option value="">Keep the video’s existing sound</option></select></label><label>Animated text overlay <span class="optional">optional</span><select id="assemble-overlay" data-library="overlay"><option value="">No overlay</option></select></label>
-<label>Sound level <span class="range-value" data-for="assemble-gain">0 dB</span><input id="assemble-gain" type="range" min="-36" max="6" value="0"></label><label class="check"><input type="checkbox" id="assemble-loop" checked> Loop the soundtrack if it is shorter than the video</label><label>Sound fade at beginning and end<select id="assemble-fade"><option value="0.25">Very short · 0.25 sec</option><option value="0">None</option><option value="1">Soft · 1 sec</option></select></label>
-<div class="note">A new MP4, ready for your review. Without a text overlay, the assembler preserves the video without re-encoding it.</div>
-</section>
-<div class="export-bar"><label>Export name<input id="export-name" placeholder="e.g. Balloon challenge · Thursday"></label><button id="render-button" class="primary">Create silent video <span>↗</span></button><p id="form-status" role="status"></p></div>
-</div>
-<aside class="preview-panel"><div class="section-heading"><h2 id="preview-heading">Framing preview</h2><span id="format-label">9:16</span></div><div id="preview-stage" class="preview-stage"><div class="empty-preview"><span class="connect-logo"><img src="/brand-2026/logo-02.png" alt="2.009 Connect"></span><p>Choose a photograph<br>to start your edit.</p></div></div><p class="muted small" id="preview-note">Select a photograph in your sequence to adjust its crop. Review the rendered video below before sharing.</p></aside>
-</div>
-<section class="exports"><div class="section-heading"><div><p class="eyebrow">MAKE · COMPARE · CHOOSE</p><h2>Your exports</h2></div><span id="job-count"></span></div><div id="jobs"><p class="muted">Your rendered audio, videos, and animated text will appear here.</p></div></section>
-<footer class="studio-footer"><span>MIT 2.009 · Product Engineering Processes</span><span>Connect, create, share. <b>2026</b></span></footer>
-</main></div>
-<dialog id="brand-dialog" aria-labelledby="brand-title">
-<div class="dialog-heading"><div><p class="eyebrow">MIT 2.009 · 2026</p><h2 id="brand-title">Made to connect.</h2></div><button id="close-brand" class="close-button" aria-label="Close brand kit">×</button></div>
-<div class="brand-logo-display"><span class="connect-logo"><img src="/brand-2026/logo-01.png" alt="2.009 Connect"></span></div>
-<div class="kit-title"><h3>The 2026 palette</h3><span>Click a color to copy its hex code</span></div><div id="brand-palette" class="brand-palette"></div><p id="brand-status" role="status"></p>
-<div class="kit-type"><div><p class="eyebrow">THE TYPEFACE</p><h3>Outfit. A good fit.</h3><p>Clear, open, and full of character.</p></div><span>Aa</span></div>
-<div class="mascot-strip" aria-label="2026 Connect mascots"><img src="/brand-2026/slack_icons-01.png" alt="Connect mascot 1" loading="lazy"><img src="/brand-2026/slack_icons-02.png" alt="Connect mascot 2" loading="lazy"><img src="/brand-2026/slack_icons-03.png" alt="Connect mascot 3" loading="lazy"><img src="/brand-2026/slack_icons-04.png" alt="Connect mascot 4" loading="lazy"><img src="/brand-2026/slack_icons-05.png" alt="Connect mascot 5" loading="lazy"><img src="/brand-2026/slack_icons-06.png" alt="Connect mascot 6" loading="lazy"></div>
-<div class="kit-downloads"><a href="/brand-2026/logo-01.png" download="2.009-2026-Connect-dark.png">Dark logo ↓</a><a href="/brand-2026/logo-02.png" download="2.009-2026-Connect-light.png">Light logo ↓</a><a href="/brand-2026/Outfit-Variable.ttf" download>Outfit font ↓</a></div>
-</dialog>
-</body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>2.009 · Candidate Studio</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <a href="/" class="brand"
+        ><span class="brand-mark">2.009</span
+        ><span>Candidate Studio<small>2026 · CONNECT</small></span></a
+      ><span class="header-note">Three possibilities. Your call.</span
+      ><span class="pill">LOCAL · 15 SEC</span>
+    </header>
+    <div class="shell">
+      <aside>
+        <div class="sidebar-heading">
+          YOUR PROJECTS
+          <button id="new-project" aria-label="New project">+</button>
+        </div>
+        <nav id="projects" aria-label="Projects"></nav>
+        <div class="sidebar-footer">
+          Make choices.<br />Make them yours.
+          <p>Local transformations<br />No API keys or generation fees.</p>
+        </div>
+      </aside>
+      <main id="main"></main>
+    </div>
+    <div id="notice" role="status" aria-live="polite" hidden></div>
+    <dialog id="create-dialog">
+      <form id="create-form">
+        <span class="eyebrow">A NEW STORY</span>
+        <h2>Start with something yours.</h2>
+        <label
+          >Your name<input
+            name="author"
+            required
+            maxlength="80"
+            autocomplete="name"
+            placeholder="Danny" /></label
+        ><label
+          >Project name<input
+            name="name"
+            required
+            maxlength="100"
+            placeholder="An unexpected connection" /></label
+        ><label
+          >Format<select name="aspect">
+            <option value="vertical">9:16 · Vertical</option>
+            <option value="horizontal">16:9 · Horizontal</option>
+          </select></label
+        >
+        <p class="muted">
+          Every output is 15 seconds. Your name travels with your choices and
+          final approval.
+        </p>
+        <div class="actions">
+          <button type="button" class="secondary" id="cancel-create">
+            Cancel</button
+          ><button type="submit">Create project →</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

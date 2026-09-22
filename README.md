@@ -1,71 +1,73 @@
-# MIT 2.009 Test Studio · 2026 Connect
+# MIT 2.009 Candidate Studio
 
-A separate, local studio for Danny Goldfield’s 2.009 social media work. Four tools share this project’s own media library and make downloadable files.
+**One local application for making choices across Audio → Video → Keyword → Assembly.**
 
-1. **Video:** arrange class photographs and edited video clips, change timing, adjust crop focus, choose still frames or gentle motion, and export silent MP4s.
-2. **Audio:** create seeded soundtracks from a main sound, optional music layer, and optional accent. Export 48 kHz stereo WAV files at a consistent listening level, with peak-safe constant gain, and listen before approving.
-3. **Text animator:** make standalone animated titles, add text over photographs or videos, or export transparent ProRes MOV overlays. Four styles: Rise & settle, Soft reveal, Word by word, and Typewriter.
-4. **Assemble:** combine selected video, sound, and optional transparent text into a new MP4. Without an overlay the video stream is copied without re-encoding.
+Generate three possibilities, compare, rate, select, and advance. Make three final mixes from your selected ingredients. Explain **“Why this one?”**, explicitly approve a version, and export the media with its provenance.
 
-## Open the studio
+Built for Danny, Talla, and the 2.009 TAs, with a small student trial as the next milestone. The purpose is entertaining, inspiring stories about the course and interest in the **December 7, 2026 final presentations livestream**. Humans retain taste, authorship, and approval.
 
-1. Double-click **Open 2.009 Test Studio.command**.
-2. Keep its Terminal window open while using the studio.
-3. Add files, make an export, review it, and use its Download button.
+## What works in this version
 
-The studio opens at http://127.0.0.1:8772/. It runs on this Mac; that address is not a public sharing link. Media and export history stay in this repository’s ignored `data/` folder. Closing the browser does not stop a render; closing the launcher does.
+- Persistent projects, uploaded originals, generation settings, rating history, saved five-star winners, selections, jobs, and approval records.
+- **15 seconds throughout.** Vertical 9:16 or horizontal 16:9.
+- Three audio interpretations, plus a separately presented **Original Mix** that preserves the recording's timing, pitch, and order within the excerpt.
+- Three bold photographic treatments from 1–10 images; three transparent animations of one Keyword.
+- Three final edits using the exact selected Audio, Video, and Text ingredients.
+- Changes to earlier selections clear affected later selections without deleting media or history.
+- Explicit explanation and approval, followed by an MP4 + provenance ZIP export. Nothing is published automatically.
+- A built-in practice project with locally generated sample images and sound. No private student media is included in Git.
 
-The first setup uses a dedicated `.venv`. For another computer, install Python 3.11+, FFmpeg, and the package:
+**Generation is currently local signal/image processing, not a learned AI model.** The files are real, not mock players. Cloud generation is researched but not integrated or live-tested. This release proves the complete interaction and preserves a small provider boundary for the next iteration.
+
+## Run locally
+
+Use **Python 3.12+** and **FFmpeg/FFprobe** on macOS or Linux. Windows users should use WSL; native Windows is not supported by the worker lock.
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -e .
+git clone https://github.com/dannygoldfield/MIT-2009-Social-Studio.git
+cd MIT-2009-Social-Studio
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements-lock.txt
+.venv/bin/python -m pip install --no-build-isolation --no-deps -e .
 .venv/bin/python -m mit2009_studio.server
 ```
 
-## HPR isolation
+Open **http://127.0.0.1:8773**. Keep the terminal running while rendering. The server binds only to this computer. A fresh installation does not need an API key, GPU, account, or paid service.
 
-HPR repositories, media banks, databases, review decisions, and environments are independent. This code has no HPR runtime imports, symlinks, shared database, Git submodule, or automatic synchronization. `docs/hpr-read-only-baseline.json` records the three HPR commits and source fingerprints inspected at the start.
+Install FFmpeg with `brew install ffmpeg` on macOS or `sudo apt install ffmpeg` on Ubuntu/Debian. Check `ffmpeg -version` and `ffprobe -version` before starting. The build must include H.264/libx264 and ProRes encoders.
 
-The audio mixing core is independently adapted from Danny’s HPR Audio Generator. Photo framing and motion are adapted from the existing 2.009 social-video work. Assembly follows the HPR pattern of combining separately selected components. HPR-specific portrait-development effects and its Registry are not runtime dependencies here.
+On a Mac, after setup, double-click **Open 2.009 Studio.command**. The older Test Studio shortcut also opens the new application.
 
-Any starting sound ingredients are independent local copies. They are excluded from Git and have no inherited 2.009 approval. Changing or approving a 2.009 output cannot change an HPR bank.
+Click **Try the sample project**, then Generate, rate a candidate, select it, and continue through the four stages. Use **CONNECT** as the sample Keyword. Sample selections and approvals are yours to make; the app does not automatically make them.
 
-## Formats and review
+## Keep your work
 
-- Vertical: 1080 × 1920; square: 1080 × 1080; wide: 1920 × 1080.
-- Video exports use 30 fps H.264, with MP4 headers arranged for browser playback.
-- Each photo/clip occupies its selected duration. Dissolves occur inside that duration.
-- The Video tool produces silent edits. The Text tool preserves existing audio when adding text to a video. The Assembler adds or replaces the soundtrack.
-- Transparent text exports are MOV files; an MP4 preview shows the animation against gray.
-- Every render is a draft. “Keep for comparison” and “Approved by me” are local review decisions; neither publishes anything.
-- Export names, settings, and output fingerprints are saved with each job. Originals are preserved.
-
-## First-version scope
-
-This version works with class photographs, edited clips, and sound files. It does not select useful moments from raw footage, replace the TAs’ editing workflow or Aaron’s independent edits, synthesize speech from text, automatically transcribe captions, or post to social accounts.
-
-## Verification
+By default, private work lives in **`data/candidate-engine/`**, separate from the previous studio's data layout. Back up that entire folder while the server is stopped. Source media and generated artifacts remain local and are excluded from Git.
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python tools/check_hpr_unchanged.py
+.venv/bin/python -m mit2009_studio.server --port 8773 --data-dir /path/to/private/studio-data
 ```
 
-Tests render actual audio, video, animated text, transparent overlays, and assembled MP4s. They check timing, dimensions, image coverage, alpha channels, audio preservation, repeatability, and the media-library path boundary.
+Do not run two studio processes against the same folder. The app deliberately does not migrate old library records or reinterpret old approval flags. The previous implementation is preserved in Git at commit `6bc6d1a`.
 
-## 2026 Connect edition
+## Verify your setup
 
-This copy is permanently branded for 2026: supplied Connect logos, the Outfit typeface, course palette, and mascots. The interface uses a #F4F4F4 background with white panels. The text animator uses bundled Outfit Bold in both its preview and new exports; existing exports are preserved. Its color swatches apply the course palette in one click. The header's **2026 brand kit** offers the logos, colors, font, and mascot references.
+```sh
+.venv/bin/python -m pytest -q
+.venv/bin/ruff check mit2009_studio tests
+```
 
-Brand assets are independent local files in `mit2009_studio/web/brand-2026/`. The supplied PNGs are unchanged. Screen hex colors were sampled from a color-managed rendering of the supplied CMYK Illustrator palette. Outfit is redistributed under its included SIL Open Font License. No remote fonts or external brand services are used.
+Tests render actual 15-second audio/video/text/assembly at smaller dimensions for speed, in both orientations. They inspect duration, frame counts, audio, actual transparent pixels, persistence, approval/export integrity, failure recovery, and selection rules. A separate browser test exercises full-resolution output and is described in [TESTING.md](docs/TESTING.md).
 
-The 2026 draft key migrates an existing draft without deleting it. If a 2027 studio is wanted, create another repository and independent data folder, port, brand folder, and browser draft key. Do not turn this installation into the next year's studio.
+## Start here, Talla
 
-## Audio: listen before mixing
+Read [TALLA.md](docs/TALLA.md), then [ARCHITECTURE.md](docs/ARCHITECTURE.md). Please challenge the design. In particular, help decide how to improve personal-audio interpretation and how little infrastructure we need for a small student alpha.
 
-Audio starts with **Listen & choose**. The three buckets are **Sound beds**, **Sound Effects**, and **Wildcards** (the former music/stem bucket). Each file has a player, Keep / Maybe / Pass assessment, editable bucket, and a note saved when the field loses focus. Playback stops any other audio player. Passed files stay out of the mix menus.
+- [Content pipeline playbook](docs/CONTENT-PIPELINE.md): the accumulated product rules.
+- [Architecture and data](docs/ARCHITECTURE.md): modules, persistence, jobs, provenance, APIs.
+- [Discovery and research](docs/DISCOVERY-2026-09-22.md): inspected prior work, alternatives, licenses, and provider shortlist.
+- [Testing](docs/TESTING.md): repeatable checks and observed results.
+- [Known limitations and student alpha](docs/LIMITATIONS.md): unfinished work and readiness gates.
+- [Reuse and licensing](docs/REUSE.md): origins and dependency considerations.
 
-The **New Adobe shortlist** filter contains 15 independently copied, unassessed candidates from Danny's local Adobe library: springs, toys, water, and other playful sound effects. These are filename-based editorial suggestions, not claims of listening approval. Source filenames, source hashes, and suggested uses are kept in the local library and provenance record. The originals are unchanged.
-
-Choose **Use in a mix** to place a file in its bucket's layer, or open **Make a mix**. Sound beds and Wildcards loop; a Sound Effect plays once, away from the boundaries. Each layer has its own player and volume control. The render engine retains its existing internal Bed/Gesture/Music recipe fields for compatibility; user-facing language uses the new bucket names.
+The API reference is available locally at `/docs`. Source-level configuration is in `mit2009_studio/presets.json`; `STUDIO_PRESETS` can point to a separate editable JSON file. There is deliberately no style editor or elaborate prompting interface yet.
