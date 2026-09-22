@@ -105,10 +105,10 @@ No end card, livestream URL, or multiword caption is added automatically. The mi
 
 Change presets by editing name, description, family, color, mode and supported parameters. Every stage needs at least three different families and unique IDs. Mode names correspond to implemented renderer functions; a new arbitrary mode requires code and tests. Every batch saves the full recipe, so edits do not rewrite old candidates. Duration is not a user-facing preset control.
 
-Use `pytest`, `ruff check`, and `ruff format` as described in TESTING.md. API routes and request shapes are generated at `/docs`. Rate/select endpoints target candidate IDs; projects scope uploads/generation/approvals; exports refer only to approval IDs.
+Use `pytest`, `ruff check`, and `ruff format` as described in TESTING.md. API routes and request shapes are generated at `/openapi.json`. External Swagger/ReDoc pages are disabled so the application remains entirely local. Mutating API requests must include `X-Studio-Request: 1`; browser requests must have a matching Origin. Rate/select endpoints target candidate IDs; projects scope uploads/generation/approvals; exports refer only to approval IDs.
 
 ## Collaboration and legacy data
 
-Canonical repository: `dannygoldfield/MIT-2009-Social-Studio`. Branches and pull requests are the recommended collaboration path. The previous local checkout is not automatically updated by this build. Pull the repository there only when ready to switch versions; legacy media/data are not migrated.
+Canonical repository: `dannygoldfield/MIT-2009-Social-Studio`. Branches and pull requests are the recommended collaboration path. Danny requested updating the existing `Projects/MIT-2009-Social-Studio` checkout in place. Its legacy media/data remain preserved; the new application uses the separate `data/candidate-engine` folder without migrating old records.
 
 No runtime imports, symlinks, database connections, or mutations point into HPR. `tools/check_hpr_unchanged.py` is an optional read-only local audit, and is not required on Talla's machine. Its references are historical fingerprints, not package dependencies.

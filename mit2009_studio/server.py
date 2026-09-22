@@ -37,7 +37,13 @@ def create_app(data_dir=None, start_worker=True, size_override=None):
         if start_worker:
             worker.stop()
 
-    app = FastAPI(title="MIT 2.009 Candidate Studio", version=VERSION, lifespan=lifespan)
+    app = FastAPI(
+        title="MIT 2.009 Candidate Studio",
+        version=VERSION,
+        lifespan=lifespan,
+        docs_url=None,
+        redoc_url=None,
+    )
     app.state.studio = studio
     app.state.worker = worker
 

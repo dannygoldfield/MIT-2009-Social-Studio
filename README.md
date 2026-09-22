@@ -70,4 +70,4 @@ Read [TALLA.md](docs/TALLA.md), then [ARCHITECTURE.md](docs/ARCHITECTURE.md). Pl
 - [Known limitations and student alpha](docs/LIMITATIONS.md): unfinished work and readiness gates.
 - [Reuse and licensing](docs/REUSE.md): origins and dependency considerations.
 
-The API reference is available locally at `/docs`. Source-level configuration is in `mit2009_studio/presets.json`; `STUDIO_PRESETS` can point to a separate editable JSON file. There is deliberately no style editor or elaborate prompting interface yet.
+The generated API schema is available locally at `/openapi.json`; API usage is described in ARCHITECTURE.md. No external documentation scripts are required. Source-level configuration is in `mit2009_studio/presets.json`; `STUDIO_PRESETS` can point to a separate editable JSON file. There is deliberately no style editor or elaborate prompting interface yet.
